@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Permissions · AURUM CRM</title>
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: {
+      colors: { 'aurum-bg':'#FAFAFA','aurum-gold':'#D4AF37','aurum-ink':'#111827' },
+      fontFamily: { display: ['"Plus Jakarta Sans"','Inter','sans-serif'], sans: ['Inter','sans-serif'] }
+    }}};
+  </script>
+  <link rel="stylesheet" href="assets/css/app.css" />
+</head>
+<body class="min-h-screen bg-aurum-bg text-aurum-ink">
+  <div class="flex min-h-screen">
+    <aside id="aurum-sidebar" class="aurum-sidebar w-64 shrink-0 bg-white border-r border-gray-100"></aside>
+    <main class="flex-1 min-w-0">
+      <div id="aurum-topbar"></div>
+
+      <div class="px-6 py-6 max-w-7xl mx-auto space-y-5">
+        <div class="bg-white rounded-xl border border-gray-100 p-5">
+          <h2 class="font-display font-semibold">Role × permission matrix</h2>
+          <p class="text-sm text-gray-500 mt-1">
+            These permissions gate UI actions. Database writes are enforced server-side by Row-Level Security
+            (see <code class="text-xs bg-gray-100 px-1.5 py-0.5 rounded">supabase/schema.sql</code>).
+          </p>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-100 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+              <thead class="bg-gray-50 text-gray-500 uppercase text-xs tracking-wide">
+                <tr id="perm-head"></tr>
+              </thead>
+              <tbody id="perm-body" class="divide-y divide-gray-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/supabase-client.js"></script>
+  <script src="assets/js/permissions.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script>
+    (async () => {
+      const ctx = await AurumAuth.guard({ permission: "permissions:view" });
+      AurumApp.boot(ctx);
+      AurumUI.setSubtitle("Read-only view of the role × permission matrix");
+
+      // Header
+      const head = document.getElementById("perm-head");
+      head.innerHTML = `
+        <th class="text-left font-medium px-5 py-3">Permission</th>
+        ${AurumPerms.ROLES.map(r => `<th class="text-center font-medium px-4 py-3">${AurumUI.escapeHtml(AurumPerms.ROLE_LABELS[r])}</th>`).join("")}
+      `;
+
+      // Body grouped by PERMISSION_GROUPS
+      const body = document.getElementById("perm-body");
+      const checkSvg = `<svg class="w-4 h-4 inline text-emerald-600" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-8 8a1 1 0 01-1.4 0l-4-4a1 1 0 011.4-1.4L8 12.6l7.3-7.3a1 1 0 011.4 0z" clip-rule="evenodd"/></svg>`;
+      const dashSvg  = `<span class="text-gray-300">—</span>`;
+
+      let html = "";
+      for (const group of AurumPerms.PERMISSION_GROUPS) {
+        html += `<tr class="bg-gray-50/60"><td colspan="${1 + AurumPerms.ROLES.length}" class="px-5 py-2 text-xs uppercase tracking-wide text-gray-500 font-medium">${AurumUI.escapeHtml(group.label)}</td></tr>`;
+        for (const key of group.keys) {
+          html += `<tr>
+            <td class="px-5 py-3 text-sm">
+              <div class="font-medium">${AurumUI.escapeHtml(AurumPerms.PERMISSION_LABELS[key] || key)}</div>
+              <div class="text-xs text-gray-400">${AurumUI.escapeHtml(key)}</div>
+            </td>
+            ${AurumPerms.ROLES.map(r => `<td class="px-4 py-3 text-center">${AurumPerms.can(r, key) ? checkSvg : dashSvg}</td>`).join("")}
+          </tr>`;
+        }
+      }
+      body.innerHTML = html;
+    })();
+  </script>
+</body>
+</html>

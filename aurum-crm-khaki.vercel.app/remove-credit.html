@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Remove Credit · AURUM CRM</title>
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: {
+      colors: { 'aurum-bg':'#FAFAFA','aurum-gold':'#D4AF37','aurum-ink':'#111827' },
+      fontFamily: { display: ['"Plus Jakarta Sans"','Inter','sans-serif'], sans: ['Inter','sans-serif'] }
+    }}};
+  </script>
+  <link rel="stylesheet" href="assets/css/app.css" />
+</head>
+<body class="min-h-screen bg-aurum-bg text-aurum-ink">
+
+  <div class="flex min-h-screen">
+    <aside id="aurum-sidebar" class="aurum-sidebar w-64 shrink-0 bg-white border-r border-gray-100"></aside>
+
+    <main class="flex-1 min-w-0">
+      <div id="aurum-topbar"></div>
+
+      <div class="px-6 py-6 max-w-3xl mx-auto space-y-5">
+        <div class="bg-rose-50 border border-rose-200 text-rose-800 rounded-xl px-4 py-3 text-sm">
+          <strong>Manual override.</strong> Use this page only to correct
+          erroneous credits or process refunds. Every action is logged with
+          your email and reason.
+        </div>
+
+        <!-- Step 1: search -->
+        <div class="bg-white rounded-xl border border-gray-100 p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="font-display text-base font-semibold">1. Find customer</h2>
+            <button id="reset-customer" class="hidden text-xs text-gray-500 hover:text-aurum-ink">Change customer</button>
+          </div>
+          <div id="search-block" class="space-y-3">
+            <div class="relative">
+              <span class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
+                </svg>
+              </span>
+              <input id="f-search" type="search" autocomplete="off" placeholder="Search by email or name…"
+                class="w-full rounded-lg border border-gray-200 bg-white pl-9 pr-3 py-2 text-sm focus-aurum"/>
+            </div>
+
+            <div class="flex items-center gap-3 text-xs text-gray-400 select-none">
+              <span class="flex-1 h-px bg-gray-200"></span>
+              <span class="uppercase tracking-wide">หรือ / or</span>
+              <span class="flex-1 h-px bg-gray-200"></span>
+            </div>
+
+            <div class="flex justify-center">
+              <button type="button" id="btn-browse-all"
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+                <span id="browse-all-label">Browse all customers</span>
+              </button>
+            </div>
+
+            <div id="results-meta" class="hidden text-xs text-gray-500"></div>
+
+            <div id="search-results"
+              class="hidden bg-white rounded-lg border border-gray-100 divide-y divide-gray-100 max-h-96 overflow-auto"></div>
+
+            <div id="results-empty" class="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-8 text-center">
+              <div class="mx-auto w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16 11a4 4 0 10-8 0 4 4 0 008 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <p class="mt-2 text-sm text-gray-600">No customer selected yet</p>
+              <p class="text-xs text-gray-400">Search by email or name, or browse all customers.</p>
+            </div>
+          </div>
+          <div id="selected-block" class="hidden rounded-lg border border-emerald-200 bg-emerald-50 p-3 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-aurum-gold/20 text-aurum-ink flex items-center justify-center font-semibold" id="sel-initials">—</div>
+            <div class="min-w-0 flex-1">
+              <div class="font-medium truncate" id="sel-name">—</div>
+              <div class="text-xs text-gray-600 truncate" id="sel-email">—</div>
+            </div>
+            <div class="text-right">
+              <div class="text-xs text-gray-500 uppercase tracking-wide">Current balance</div>
+              <div class="font-display text-base font-semibold" id="sel-balance">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: form (hidden until customer chosen) -->
+        <form id="credit-form" class="hidden bg-white rounded-xl border border-gray-100 p-5 space-y-4">
+          <h2 class="font-display text-base font-semibold">2. Credit details</h2>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Amount (USD)</label>
+            <input name="amount" type="number" step="0.01" min="0.01" max="10000" required
+              class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum"/>
+            <p class="mt-1 text-xs text-gray-500">Min $0.01 · max $10,000 per transaction.</p>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Reason</label>
+            <textarea name="reason" rows="3" required minlength="10"
+              placeholder="e.g. Refund — duplicate deposit credited in error"
+              class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum"></textarea>
+            <p class="mt-1 text-xs text-gray-500">Min 10 characters. Visible to auditors.</p>
+          </div>
+
+          <div class="pt-2 flex items-center justify-end gap-2">
+            <button type="button" id="btn-cancel" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100">Cancel</button>
+            <button type="submit" id="btn-submit" disabled
+              class="px-4 py-2 rounded-lg text-sm font-semibold bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed">
+              Remove Credit
+            </button>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/supabase-client.js"></script>
+  <script src="assets/js/permissions.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script>
+    (async () => {
+      const ctx = await AurumAuth.guard({
+        requireEmail: window.AURUM_CONFIG.SUPER_ADMIN_EMAIL,
+      });
+      AurumApp.boot(ctx);
+      AurumUI.setSubtitle("Manually remove credit from a customer wallet");
+
+      const MIN_REASON = 10;
+
+      const els = {
+        search:        document.getElementById("f-search"),
+        results:       document.getElementById("search-results"),
+        resultsMeta:   document.getElementById("results-meta"),
+        resultsEmpty:  document.getElementById("results-empty"),
+        browseAll:     document.getElementById("btn-browse-all"),
+        browseAllLbl:  document.getElementById("browse-all-label"),
+        selectedBlock: document.getElementById("selected-block"),
+        searchBlock:   document.getElementById("search-block"),
+        resetBtn:      document.getElementById("reset-customer"),
+        selInitials:   document.getElementById("sel-initials"),
+        selName:       document.getElementById("sel-name"),
+        selEmail:      document.getElementById("sel-email"),
+        selBalance:    document.getElementById("sel-balance"),
+        form:          document.getElementById("credit-form"),
+        amount:        document.querySelector("[name=amount]"),
+        reason:        document.querySelector("[name=reason]"),
+        submit:        document.getElementById("btn-submit"),
+        cancel:        document.getElementById("btn-cancel"),
+      };
+
+      let selectedCustomer = null;
+      let searchSeq = 0;
+
+      function apiBase() {
+        const url = (window.AURUM_CONFIG.WALLET_API_URL || "").replace(/\/+$/, "");
+        return url;
+      }
+
+      function fmtUsd(n) {
+        const v = Number(n);
+        if (!Number.isFinite(v)) return "—";
+        return "$" + v.toFixed(2);
+      }
+
+      async function authHeaders() {
+        const sess = await AurumAuth.currentSession();
+        if (!sess?.access_token) throw new Error("Session expired — sign in again.");
+        return { "Authorization": `Bearer ${sess.access_token}` };
+      }
+
+      // ---------- Search ----------------------------------------------
+      let searchTimer = null;
+      els.search.addEventListener("input", () => {
+        clearTimeout(searchTimer);
+        const q = els.search.value.trim();
+        if (q.length === 0) { resetResults(); return; }
+        if (q.length < 2) {
+          showMeta("Type at least 2 characters to search.");
+          els.results.classList.add("hidden");
+          els.resultsEmpty.classList.add("hidden");
+          return;
+        }
+        searchTimer = setTimeout(() => runSearch(q, { mode: "search" }), 300);
+      });
+
+      els.browseAll.addEventListener("click", async () => {
+        els.search.value = "";
+        await runSearch("", { mode: "browse" });
+      });
+
+      function resetResults() {
+        els.results.classList.add("hidden");
+        els.results.innerHTML = "";
+        els.resultsMeta.classList.add("hidden");
+        els.resultsEmpty.classList.remove("hidden");
+      }
+
+      function showMeta(text) {
+        els.resultsMeta.textContent = text;
+        els.resultsMeta.classList.remove("hidden");
+      }
+
+      function setBrowseLoading(on) {
+        els.browseAll.disabled = on;
+        els.browseAll.classList.toggle("opacity-60", on);
+        els.browseAll.classList.toggle("cursor-not-allowed", on);
+        els.browseAllLbl.textContent = on ? "Loading customers…" : "Browse all customers";
+      }
+
+      async function fetchCustomers(q) {
+        const resp = await fetch(`${apiBase()}/api/admin/customers/search?q=${encodeURIComponent(q)}`, {
+          headers: await authHeaders(),
+        });
+        const txt = await resp.text();
+        let out = {};
+        try { out = txt ? JSON.parse(txt) : {}; } catch {}
+        return { resp, out };
+      }
+
+      async function runSearch(q, { mode } = { mode: "search" }) {
+        if (!apiBase()) {
+          renderResultsError("WALLET_API_URL is not configured in assets/js/config.js — backend search unavailable.");
+          return;
+        }
+        const seq = ++searchSeq;
+        const isBrowse = mode === "browse";
+
+        els.resultsEmpty.classList.add("hidden");
+        els.results.classList.remove("hidden");
+        els.results.innerHTML = `<div class="px-3 py-3 text-xs text-gray-500 flex items-center gap-2">
+          <span class="inline-block w-3 h-3 rounded-full border-2 border-gray-300 border-t-aurum-gold animate-spin"></span>
+          ${isBrowse ? "Loading all customers…" : "Searching…"}
+        </div>`;
+        showMeta(isBrowse ? "Loading customers…" : `Searching for "${AurumUI.escapeHtml(q)}"…`);
+        if (isBrowse) setBrowseLoading(true);
+
+        let resp, out;
+        try {
+          ({ resp, out } = await fetchCustomers(q));
+          if (seq !== searchSeq) return;
+          if (isBrowse && resp.ok && Array.isArray(out.customers) && out.customers.length === 0) {
+            ({ resp, out } = await fetchCustomers("@"));
+            if (seq !== searchSeq) return;
+          }
+        } catch (err) {
+          if (seq !== searchSeq) return;
+          if (isBrowse) setBrowseLoading(false);
+          renderResultsError(`Network error: ${err.message || err}`);
+          return;
+        }
+
+        if (isBrowse) setBrowseLoading(false);
+
+        if (!resp.ok) {
+          renderResultsError(out.error || `Request failed (${resp.status})`);
+          return;
+        }
+
+        const list = Array.isArray(out.customers) ? out.customers : [];
+        if (list.length === 0) {
+          els.results.classList.add("hidden");
+          els.results.innerHTML = "";
+          showMeta(isBrowse ? "No customers found." : `No customers match "${q}".`);
+          return;
+        }
+
+        showMeta(`Showing ${list.length} customer${list.length === 1 ? "" : "s"}${isBrowse ? "" : ` for "${q}"`}.`);
+
+        els.results.innerHTML = list.map(c => {
+          const initials = (c.name || c.email || "?").slice(0,1).toUpperCase();
+          return `
+            <button type="button" data-id="${AurumUI.escapeHtml(c.id)}"
+              class="group w-full text-left px-3 py-3 hover:bg-aurum-gold/5 flex items-center gap-3 transition cursor-pointer">
+              <div class="w-9 h-9 rounded-full bg-aurum-gold/20 text-aurum-ink flex items-center justify-center font-semibold text-sm shrink-0">${AurumUI.escapeHtml(initials)}</div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium truncate">${AurumUI.escapeHtml(c.name || "—")}</div>
+                <div class="text-xs text-gray-500 truncate">${AurumUI.escapeHtml(c.email || "")}</div>
+              </div>
+              <div class="text-sm font-medium text-gray-700 whitespace-nowrap tabular-nums">${AurumUI.escapeHtml(fmtUsd(c.balance))}</div>
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-gray-300 group-hover:text-aurum-ink shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>`;
+        }).join("");
+
+        els.results.querySelectorAll("[data-id]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const c = list.find(x => x.id === btn.dataset.id);
+            if (c) selectCustomer(c);
+          });
+        });
+      }
+
+      function renderResultsError(msg) {
+        els.results.classList.remove("hidden");
+        els.results.innerHTML = `<div class="px-3 py-3 text-sm text-rose-600">${AurumUI.escapeHtml(msg)}</div>`;
+        els.resultsMeta.classList.add("hidden");
+      }
+
+      function selectCustomer(c) {
+        selectedCustomer = c;
+        els.searchBlock.classList.add("hidden");
+        els.selectedBlock.classList.remove("hidden");
+        els.resetBtn.classList.remove("hidden");
+        els.selInitials.textContent = (c.name || c.email || "?").slice(0,1).toUpperCase();
+        els.selName.textContent     = c.name || "—";
+        els.selEmail.textContent    = c.email || "";
+        els.selBalance.textContent  = fmtUsd(c.balance);
+        els.form.classList.remove("hidden");
+        validate();
+        els.amount.focus();
+      }
+
+      els.resetBtn.addEventListener("click", () => {
+        selectedCustomer = null;
+        els.searchBlock.classList.remove("hidden");
+        els.selectedBlock.classList.add("hidden");
+        els.resetBtn.classList.add("hidden");
+        els.form.classList.add("hidden");
+        els.search.value = "";
+        resetResults();
+        els.search.focus();
+      });
+
+      // ---------- Form validation -------------------------------------
+      [els.amount, els.reason].forEach(el => el.addEventListener("input", validate));
+      els.cancel.addEventListener("click", () => { window.location.href = "dashboard.html"; });
+
+      function validate() {
+        const amt = Number(els.amount.value);
+        const reason = (els.reason.value || "").trim();
+        const ok = !!selectedCustomer
+          && Number.isFinite(amt) && amt >= 0.01 && amt <= 10000
+          && reason.length >= MIN_REASON;
+        els.submit.disabled = !ok;
+        return ok;
+      }
+
+      // ---------- Submit ----------------------------------------------
+      els.form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!validate()) return;
+        const amount = Number(els.amount.value);
+        const reason = els.reason.value.trim();
+
+        const confirmed = await AurumUI.modal({
+          title: "Confirm credit removal",
+          confirmLabel: "Confirm Remove Credit",
+          confirmClass: "bg-red-500 text-white hover:bg-red-600",
+          bodyHtml: `
+            <p class="text-sm text-gray-700">
+              Remove <strong>${AurumUI.escapeHtml(fmtUsd(amount))}</strong> from
+              <strong>${AurumUI.escapeHtml(selectedCustomer.email || "")}</strong>?
+            </p>
+            <div class="mt-3 rounded-lg bg-gray-50 border border-gray-200 px-3 py-2 text-xs text-gray-700">
+              <div class="text-gray-500 uppercase tracking-wide mb-1">Reason</div>
+              <div class="whitespace-pre-wrap break-words">${AurumUI.escapeHtml(reason)}</div>
+            </div>
+            <p class="mt-3 text-xs text-gray-500">This will be logged in Credit Log against your email.</p>`,
+          onConfirm: async () => true,
+        });
+        if (!confirmed) return;
+
+        if (!apiBase()) {
+          AurumUI.toast("WALLET_API_URL is not configured.", "error");
+          return;
+        }
+
+        els.submit.disabled = true;
+        const restoreBtn = () => { els.submit.textContent = "Remove Credit"; validate(); };
+        els.submit.textContent = "Removing credit…";
+
+        let result;
+        try {
+          result = await postRemoveCredit({
+            customer_id: selectedCustomer.id,
+            amount,
+            reason,
+          });
+        } catch (err) {
+          AurumUI.toast(`Remove credit failed: ${err.message || err}`, "error");
+          restoreBtn();
+          return;
+        }
+
+        await AurumAuth.log("admin.credit_removed", {
+          resource_type: "customer_profile",
+          resource_id: selectedCustomer.id,
+          metadata: {
+            email: selectedCustomer.email,
+            amount_usd: amount,
+            transaction_id: result.transaction_id || null,
+          },
+        });
+
+        AurumUI.toast("Credit removed successfully", "success");
+        setTimeout(() => {
+          window.location.href = `customers.html?focus=${encodeURIComponent(selectedCustomer.email || "")}`;
+        }, 700);
+      });
+
+      async function postRemoveCredit(payload) {
+        const fd = new FormData();
+        fd.append("customer_id", payload.customer_id);
+        fd.append("amount", String(payload.amount));
+        fd.append("reason", payload.reason);
+        const resp = await fetch(`${apiBase()}/api/admin/remove-credit`, {
+          method: "POST",
+          headers: await authHeaders(),
+          body: fd,
+        });
+        const txt = await resp.text();
+        let out = {};
+        try { out = txt ? JSON.parse(txt) : {}; } catch {}
+        if (!resp.ok || out.ok === false) {
+          throw new Error(out.error || `HTTP ${resp.status}`);
+        }
+        return out;
+      }
+    })();
+  </script>
+</body>
+</html>

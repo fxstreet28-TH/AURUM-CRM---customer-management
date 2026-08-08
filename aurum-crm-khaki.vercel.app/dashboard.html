@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard · AURUM CRM</title>
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: {
+      colors: { 'aurum-bg':'#FAFAFA','aurum-gold':'#D4AF37','aurum-ink':'#111827' },
+      fontFamily: { display: ['"Plus Jakarta Sans"','Inter','sans-serif'], sans: ['Inter','sans-serif'] }
+    }}};
+  </script>
+  <link rel="stylesheet" href="assets/css/app.css" />
+</head>
+<body class="min-h-screen bg-aurum-bg text-aurum-ink">
+
+  <div class="flex min-h-screen">
+    <aside id="aurum-sidebar" class="aurum-sidebar w-64 shrink-0 bg-white border-r border-gray-100"></aside>
+
+    <main class="flex-1 min-w-0">
+      <div id="aurum-topbar"></div>
+
+      <div class="px-6 py-6 max-w-7xl mx-auto space-y-6">
+        <!-- Stat cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Total users</div>
+            <div class="font-display text-2xl font-semibold mt-1" data-stat="total">—</div>
+            <div class="text-xs text-gray-400 mt-1">All roles</div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Active</div>
+            <div class="font-display text-2xl font-semibold mt-1" data-stat="active">—</div>
+            <div class="text-xs text-emerald-600 mt-1">Signed in at least once</div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Invited</div>
+            <div class="font-display text-2xl font-semibold mt-1" data-stat="invited">—</div>
+            <div class="text-xs text-amber-600 mt-1">Awaiting first login</div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Suspended</div>
+            <div class="font-display text-2xl font-semibold mt-1" data-stat="suspended">—</div>
+            <div class="text-xs text-rose-600 mt-1">Blocked from sign-in</div>
+          </div>
+          <a href="customers.html" class="bg-white rounded-xl border border-gray-100 p-5 hover:border-aurum-gold/40 transition block">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Customers</div>
+            <div class="font-display text-2xl font-semibold mt-1" data-stat="customers">—</div>
+            <div class="text-xs text-aurum-gold mt-1" data-stat="customers-new">aurumlive signups</div>
+          </a>
+        </div>
+
+        <!-- Charts row -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="lg:col-span-2 bg-white rounded-xl border border-gray-100 p-5">
+            <div class="flex items-center justify-between mb-2">
+              <h2 class="font-display font-semibold">New users · last 30 days</h2>
+              <span class="text-xs text-gray-400">Daily</span>
+            </div>
+            <div class="chart-host"><canvas id="chart-new-users"></canvas></div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <h2 class="font-display font-semibold mb-2">Role distribution</h2>
+            <div class="chart-host"><canvas id="chart-roles"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Customers chart -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="lg:col-span-2 bg-white rounded-xl border border-gray-100 p-5">
+            <div class="flex items-center justify-between mb-2">
+              <h2 class="font-display font-semibold">New customers · last 30 days</h2>
+              <a href="customers.html" class="text-xs font-medium text-gray-500 hover:text-aurum-gold">View all →</a>
+            </div>
+            <div class="chart-host"><canvas id="chart-new-customers"></canvas></div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <h2 class="font-display font-semibold mb-2">Customer status</h2>
+            <div class="chart-host"><canvas id="chart-customer-status"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Recent activity -->
+        <div class="bg-white rounded-xl border border-gray-100">
+          <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h2 class="font-display font-semibold">Recent activity</h2>
+            <a href="activity.html" class="text-xs font-medium text-aurum-ink hover:text-aurum-gold">View all →</a>
+          </div>
+          <div class="divide-y divide-gray-100" id="recent-activity">
+            <div class="px-5 py-4 text-sm text-gray-400">Loading…</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/supabase-client.js"></script>
+  <script src="assets/js/permissions.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script>
+    (async () => {
+      const ctx = await AurumAuth.guard({ permission: "dashboard:view" });
+      AurumApp.boot(ctx);
+      AurumUI.setSubtitle("Overview of AURUM AI user accounts");
+
+      // ---- Stats -----------------------------------------------------
+      const { data: profiles, error } = await sb
+        .from("profiles")
+        .select("id, role, status, created_at, last_login_at");
+      if (error) { AurumUI.toast(error.message, "error"); return; }
+
+      const stats = { total: profiles.length, active: 0, invited: 0, suspended: 0 };
+      const roleCounts = { super_admin:0, admin:0, manager:0, operator:0, viewer:0 };
+      for (const p of profiles) {
+        if (stats[p.status] !== undefined) stats[p.status]++;
+        if (roleCounts[p.role] !== undefined) roleCounts[p.role]++;
+      }
+      for (const k of Object.keys(stats)) {
+        const el = document.querySelector(`[data-stat="${k}"]`);
+        if (el) el.textContent = stats[k];
+      }
+
+      // ---- New-users line chart -------------------------------------
+      const days = 30;
+      const buckets = [];
+      const labels  = [];
+      const today = new Date(); today.setHours(0,0,0,0);
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(today); d.setDate(today.getDate() - i);
+        buckets.push(0);
+        labels.push(d.toLocaleDateString(undefined,{month:"short",day:"numeric"}));
+      }
+      for (const p of profiles) {
+        if (!p.created_at) continue;
+        const d = new Date(p.created_at); d.setHours(0,0,0,0);
+        const diff = Math.floor((today - d) / 86400000);
+        if (diff >= 0 && diff < days) buckets[days - 1 - diff]++;
+      }
+      new Chart(document.getElementById("chart-new-users"), {
+        type: "line",
+        data: { labels, datasets: [{
+          label: "New users",
+          data: buckets,
+          borderColor: "#D4AF37",
+          backgroundColor: "rgba(212,175,55,0.15)",
+          fill: true,
+          tension: 0.35,
+          pointRadius: 0,
+          borderWidth: 2,
+        }]},
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "#F3F4F6" } },
+            x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkipPadding: 12 } },
+          },
+        },
+      });
+
+      // ---- Role donut -----------------------------------------------
+      new Chart(document.getElementById("chart-roles"), {
+        type: "doughnut",
+        data: {
+          labels: Object.keys(roleCounts).map(r => AurumPerms.ROLE_LABELS[r]),
+          datasets: [{
+            data: Object.values(roleCounts),
+            backgroundColor: ["#D4AF37","#6366F1","#0EA5E9","#14B8A6","#9CA3AF"],
+            borderWidth: 0,
+          }],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: "62%",
+          plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 } } } },
+        },
+      });
+
+      // ---- Customers (signups from aurumlive) -----------------------
+      // Wrapped in try/catch so a missing table or RLS issue doesn't
+      // break the rest of the dashboard for non-admin viewers.
+      try {
+        const since = new Date(Date.now() - days * 86400000).toISOString();
+        const { data: customers, error: custErr } = await sb
+          .from("customer_profiles")
+          .select("id, status, registered_at");
+
+        if (custErr) throw custErr;
+
+        const cStats = { total: customers.length, active: 0, pending: 0, suspended: 0 };
+        const cBuckets = new Array(days).fill(0);
+        let recentNew = 0;
+        for (const c of customers) {
+          if (cStats[c.status] !== undefined) cStats[c.status]++;
+          if (!c.registered_at) continue;
+          const d = new Date(c.registered_at); d.setHours(0,0,0,0);
+          const diff = Math.floor((today - d) / 86400000);
+          if (diff >= 0 && diff < days) {
+            cBuckets[days - 1 - diff]++;
+            recentNew++;
+          }
+        }
+
+        const elTotal = document.querySelector('[data-stat="customers"]');
+        const elNew   = document.querySelector('[data-stat="customers-new"]');
+        if (elTotal) elTotal.textContent = cStats.total;
+        if (elNew)   elNew.textContent = recentNew > 0 ? `+${recentNew} in last ${days}d` : "aurumlive signups";
+
+        new Chart(document.getElementById("chart-new-customers"), {
+          type: "line",
+          data: { labels, datasets: [{
+            label: "New customers",
+            data: cBuckets,
+            borderColor: "#B8860B",
+            backgroundColor: "rgba(184,134,11,0.18)",
+            fill: true,
+            tension: 0.35,
+            pointRadius: 0,
+            borderWidth: 2,
+          }]},
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "#F3F4F6" } },
+              x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkipPadding: 12 } },
+            },
+          },
+        });
+
+        new Chart(document.getElementById("chart-customer-status"), {
+          type: "doughnut",
+          data: {
+            labels: ["Active","Pending","Suspended"],
+            datasets: [{
+              data: [cStats.active, cStats.pending, cStats.suspended],
+              backgroundColor: ["#10B981","#F59E0B","#EF4444"],
+              borderWidth: 0,
+            }],
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false, cutout: "62%",
+            plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 } } } },
+          },
+        });
+      } catch (e) {
+        console.warn("customer stats unavailable:", e?.message || e);
+        const elTotal = document.querySelector('[data-stat="customers"]');
+        if (elTotal) elTotal.textContent = "—";
+      }
+
+      // ---- Recent activity (last 8) ---------------------------------
+      const host = document.getElementById("recent-activity");
+      host.innerHTML = "";
+      const { data: acts, error: actsErr } = await sb
+        .from("activity_logs")
+        .select("id, actor_email, action, resource_type, metadata, created_at")
+        .order("created_at", { ascending: false })
+        .limit(8);
+      if (actsErr) {
+        host.innerHTML = `<div class="px-5 py-4 text-sm text-rose-600">${AurumUI.escapeHtml(actsErr.message)}</div>`;
+        return;
+      }
+      if (!acts || acts.length === 0) {
+        host.innerHTML = `<div class="px-5 py-4 text-sm text-gray-400">No activity yet.</div>`;
+        return;
+      }
+      host.innerHTML = acts.map(a => `
+        <div class="px-5 py-3 flex items-center justify-between">
+          <div class="min-w-0">
+            <div class="text-sm font-medium text-aurum-ink truncate">${AurumUI.escapeHtml(a.action)}</div>
+            <div class="text-xs text-gray-500 truncate">${AurumUI.escapeHtml(a.actor_email || "system")} · ${AurumUI.escapeHtml(a.resource_type || "—")}</div>
+          </div>
+          <div class="text-xs text-gray-400 shrink-0 ml-3">${AurumUI.fmtRelative(a.created_at)}</div>
+        </div>`).join("");
+    })();
+  </script>
+</body>
+</html>

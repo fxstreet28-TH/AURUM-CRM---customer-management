@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Credit Log · AURUM CRM</title>
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: {
+      colors: { 'aurum-bg':'#FAFAFA','aurum-gold':'#D4AF37','aurum-ink':'#111827' },
+      fontFamily: { display: ['"Plus Jakarta Sans"','Inter','sans-serif'], sans: ['Inter','sans-serif'] }
+    }}};
+  </script>
+  <link rel="stylesheet" href="assets/css/app.css" />
+</head>
+<body class="min-h-screen bg-aurum-bg text-aurum-ink">
+
+  <div class="flex min-h-screen">
+    <aside id="aurum-sidebar" class="aurum-sidebar w-64 shrink-0 bg-white border-r border-gray-100"></aside>
+
+    <main class="flex-1 min-w-0">
+      <div id="aurum-topbar"></div>
+
+      <div class="px-6 py-6 max-w-7xl mx-auto space-y-5">
+        <!-- Filters -->
+        <div class="bg-white rounded-xl border border-gray-100 p-4 flex flex-wrap items-center gap-3">
+          <input id="f-email" type="search" placeholder="Filter by customer email…"
+            class="flex-1 min-w-[220px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum"/>
+          <input id="f-from" type="date" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum" />
+          <span class="text-xs text-gray-400">to</span>
+          <input id="f-to"   type="date" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum" />
+          <button id="btn-apply" class="bg-aurum-gold text-aurum-ink font-semibold rounded-lg px-4 py-2 text-sm hover:brightness-95">Apply</button>
+          <button id="btn-clear" class="text-sm text-gray-600 hover:text-aurum-ink">Clear</button>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-white rounded-xl border border-gray-100 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="aurum-table min-w-full text-sm">
+              <thead class="bg-gray-50 text-gray-500 uppercase text-xs tracking-wide">
+                <tr>
+                  <th class="text-left font-medium px-5 py-3">Date</th>
+                  <th class="text-left font-medium px-5 py-3">Customer</th>
+                  <th class="text-right font-medium px-5 py-3">Amount</th>
+                  <th class="text-left font-medium px-5 py-3">Reason</th>
+                  <th class="text-left font-medium px-5 py-3">Proof</th>
+                  <th class="text-left font-medium px-5 py-3">Added by</th>
+                </tr>
+              </thead>
+              <tbody id="logs-body" class="divide-y divide-gray-100">
+                <tr><td colspan="6" class="px-5 py-8 text-center text-sm text-gray-400">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-3">
+            <span class="text-xs text-gray-500" id="logs-count"></span>
+            <div class="flex items-center gap-2" id="logs-pager"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/supabase-client.js"></script>
+  <script src="assets/js/permissions.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script>
+    (async () => {
+      const ctx = await AurumAuth.guard({
+        requireEmail: window.AURUM_CONFIG.SUPER_ADMIN_EMAIL,
+      });
+      AurumApp.boot(ctx);
+      AurumUI.setSubtitle("History of manual credits");
+
+      const PAGE_SIZE = 20;
+      let page = 1;
+      let total = 0;
+
+      const els = {
+        email:  document.getElementById("f-email"),
+        from:   document.getElementById("f-from"),
+        to:     document.getElementById("f-to"),
+        apply:  document.getElementById("btn-apply"),
+        clear:  document.getElementById("btn-clear"),
+        body:   document.getElementById("logs-body"),
+        count:  document.getElementById("logs-count"),
+        pager:  document.getElementById("logs-pager"),
+      };
+
+      els.apply.addEventListener("click", () => { page = 1; load(); });
+      els.clear.addEventListener("click", () => {
+        els.email.value = ""; els.from.value = ""; els.to.value = "";
+        page = 1; load();
+      });
+      els.email.addEventListener("keydown", (e) => { if (e.key === "Enter") { page = 1; load(); } });
+
+      function apiBase() {
+        return (window.AURUM_CONFIG.WALLET_API_URL || "").replace(/\/+$/, "");
+      }
+      function fmtUsd(n) {
+        const v = Number(n);
+        if (!Number.isFinite(v)) return "—";
+        return "$" + v.toFixed(2);
+      }
+      function truncate(s, n) {
+        s = String(s || "");
+        return s.length > n ? s.slice(0, n - 1) + "…" : s;
+      }
+
+      await load();
+
+      async function load() {
+        if (!apiBase()) {
+          renderError("WALLET_API_URL is not configured in assets/js/config.js — backend log unavailable.");
+          return;
+        }
+        els.body.innerHTML = `<tr><td colspan="6" class="px-5 py-8 text-center text-sm text-gray-400">Loading…</td></tr>`;
+        const sess = await AurumAuth.currentSession();
+        if (!sess?.access_token) { renderError("Session expired — sign in again."); return; }
+
+        const params = new URLSearchParams();
+        params.set("page",  String(page));
+        params.set("limit", String(PAGE_SIZE));
+        if (els.email.value.trim()) params.set("email", els.email.value.trim());
+        if (els.from.value)         params.set("from",  els.from.value);
+        if (els.to.value)           params.set("to",    els.to.value);
+
+        let resp, out = {};
+        try {
+          resp = await fetch(`${apiBase()}/api/admin/credit-log?${params.toString()}`, {
+            headers: { "Authorization": `Bearer ${sess.access_token}` },
+          });
+          const txt = await resp.text();
+          try { out = txt ? JSON.parse(txt) : {}; } catch { out = {}; }
+        } catch (err) {
+          renderError(`Network error: ${err.message || err}`);
+          return;
+        }
+        if (!resp.ok) {
+          renderError(out.error || `Failed to load (${resp.status})`);
+          return;
+        }
+        const logs = Array.isArray(out.logs) ? out.logs : [];
+        total = Number(out.total) || logs.length;
+        render(logs);
+      }
+
+      function renderError(msg) {
+        els.body.innerHTML = `<tr><td colspan="6" class="px-5 py-8 text-center text-sm text-rose-600">${AurumUI.escapeHtml(msg)}</td></tr>`;
+        els.count.textContent = "";
+        els.pager.innerHTML = "";
+      }
+
+      function render(logs) {
+        if (logs.length === 0) {
+          els.body.innerHTML = `<tr><td colspan="6" class="px-5 py-8 text-center text-sm text-gray-400">No credit log entries match these filters.</td></tr>`;
+        } else {
+          els.body.innerHTML = logs.map(l => {
+            const reasonFull  = l.reason || "";
+            const reasonShort = truncate(reasonFull, 60);
+            const proofThumb  = l.proof_image_url
+              ? `<button type="button" data-proof="${AurumUI.escapeHtml(l.proof_image_url)}"
+                   class="block w-12 h-12 rounded border border-gray-200 overflow-hidden hover:ring-2 hover:ring-aurum-gold/40">
+                   <img src="${AurumUI.escapeHtml(l.proof_image_url)}" alt="proof"
+                     class="w-full h-full object-cover" loading="lazy" />
+                 </button>`
+              : `<span class="text-xs text-gray-400">—</span>`;
+            return `
+              <tr>
+                <td class="px-5 py-3 text-gray-700 whitespace-nowrap">
+                  <div>${AurumUI.escapeHtml(l.created_at || "")}</div>
+                  <div class="text-xs text-gray-400">${AurumUI.escapeHtml(AurumUI.fmtRelative(l.created_at))}</div>
+                </td>
+                <td class="px-5 py-3 text-gray-700 truncate max-w-[220px]">${AurumUI.escapeHtml(l.customer_email || "—")}</td>
+                <td class="px-5 py-3 text-right font-semibold text-emerald-700 whitespace-nowrap">+${AurumUI.escapeHtml(fmtUsd(l.amount_usd))}</td>
+                <td class="px-5 py-3 text-gray-700 max-w-[320px]">
+                  <span title="${AurumUI.escapeHtml(reasonFull)}">${AurumUI.escapeHtml(reasonShort)}</span>
+                </td>
+                <td class="px-5 py-3">${proofThumb}</td>
+                <td class="px-5 py-3 text-gray-700 truncate max-w-[200px]">${AurumUI.escapeHtml(l.added_by_email || "—")}</td>
+              </tr>`;
+          }).join("");
+          els.body.querySelectorAll("[data-proof]").forEach(b => b.addEventListener("click", () => openProof(b.dataset.proof)));
+        }
+
+        const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+        els.count.textContent = `Showing page ${page} of ${totalPages} · ${total} total`;
+        renderPager(totalPages);
+      }
+
+      function renderPager(totalPages) {
+        if (totalPages <= 1) { els.pager.innerHTML = ""; return; }
+        els.pager.innerHTML = `
+          <button data-pg="prev" ${page <= 1 ? "disabled" : ""}
+            class="px-2 py-1 rounded-md border border-gray-200 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-40">‹ Prev</button>
+          <span class="text-xs text-gray-500">Page ${page} / ${totalPages}</span>
+          <button data-pg="next" ${page >= totalPages ? "disabled" : ""}
+            class="px-2 py-1 rounded-md border border-gray-200 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-40">Next ›</button>`;
+        els.pager.querySelectorAll("[data-pg]").forEach(b => b.addEventListener("click", e => {
+          if (e.currentTarget.dataset.pg === "prev" && page > 1)         { page--; load(); }
+          if (e.currentTarget.dataset.pg === "next" && page < totalPages){ page++; load(); }
+        }));
+      }
+
+      function openProof(url) {
+        const wrap = document.createElement("div");
+        wrap.className = "fixed inset-0 z-[998] flex items-center justify-center p-4 bg-gray-900/70";
+        wrap.innerHTML = `
+          <div class="relative max-w-4xl w-full">
+            <button data-close
+              class="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-white text-gray-700 shadow hover:bg-gray-50">✕</button>
+            <img src="${AurumUI.escapeHtml(url)}" alt="Proof image"
+              class="w-full max-h-[85vh] object-contain rounded-lg bg-white border border-gray-200"/>
+          </div>`;
+        document.body.appendChild(wrap);
+        const close = () => wrap.remove();
+        wrap.addEventListener("click", e => { if (e.target === wrap) close(); });
+        wrap.querySelector("[data-close]").addEventListener("click", close);
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MT5 Connections · AURUM CRM</title>
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: {
+      colors: { 'aurum-bg':'#FAFAFA','aurum-gold':'#D4AF37','aurum-ink':'#111827' },
+      fontFamily: { display: ['"Plus Jakarta Sans"','Inter','sans-serif'], sans: ['Inter','sans-serif'] }
+    }}};
+  </script>
+  <link rel="stylesheet" href="assets/css/app.css" />
+</head>
+<body class="min-h-screen bg-aurum-bg text-aurum-ink">
+
+  <div class="flex min-h-screen">
+    <aside id="aurum-sidebar" class="aurum-sidebar w-64 shrink-0 bg-white border-r border-gray-100"></aside>
+
+    <main class="flex-1 min-w-0">
+      <div id="aurum-topbar"></div>
+
+      <div class="px-6 py-6 max-w-7xl mx-auto space-y-5">
+        <!-- Stat cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Total connections</div>
+            <div class="font-display text-2xl font-semibold mt-1" data-stat="total">—</div>
+            <div class="text-xs text-gray-400 mt-1">Across all brokers</div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Deployed</div>
+            <div class="font-display text-2xl font-semibold mt-1 text-emerald-600" data-stat="deployed">—</div>
+            <div class="text-xs text-emerald-600 mt-1">MetaApi DEPLOYED</div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Active subscription</div>
+            <div class="font-display text-2xl font-semibold mt-1 text-sky-600" data-stat="subscribed">—</div>
+            <div class="text-xs text-sky-600 mt-1">CopyFactory subscribers</div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Pending</div>
+            <div class="font-display text-2xl font-semibold mt-1 text-amber-600" data-stat="pending">—</div>
+            <div class="text-xs text-amber-600 mt-1">Awaiting CopyFactory sync</div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Not subscribed</div>
+            <div class="font-display text-2xl font-semibold mt-1 text-rose-600" data-stat="not_subscribed">—</div>
+            <div class="text-xs text-rose-600 mt-1">No CopyFactory subscription</div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-xl border border-gray-100 p-4 flex flex-wrap items-center gap-3">
+          <input id="f-search" type="search" placeholder="Search email, name, MT5 login, server…"
+            class="flex-1 min-w-[220px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum"/>
+          <select id="f-broker" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum">
+            <option value="">All brokers</option>
+            <option value="InterStellar">InterStellar</option>
+            <option value="KCM">KCM</option>
+            <option value="XM">XM</option>
+            <option value="KVB Prime">KVB Prime</option>
+          </select>
+          <select id="f-status" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum">
+            <option value="">All subscription states</option>
+            <option value="active">Active</option>
+            <option value="pending">Pending</option>
+            <option value="not_subscribed">Not subscribed</option>
+          </select>
+          <label class="inline-flex items-center gap-2 text-xs text-gray-600">
+            <input id="f-master" type="checkbox" class="rounded border-gray-300" />
+            Show master accounts
+          </label>
+          <button id="btn-refresh"
+            class="ml-auto px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-700 hover:bg-gray-50">
+            Refresh
+          </button>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-white rounded-xl border border-gray-100 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="aurum-table min-w-full text-sm">
+              <thead class="bg-gray-50 text-gray-500 uppercase text-xs tracking-wide">
+                <tr>
+                  <th class="text-left font-medium px-5 py-3">Customer</th>
+                  <th class="text-left font-medium px-5 py-3">MT5 Login</th>
+                  <th class="text-left font-medium px-5 py-3">Broker / Server</th>
+                  <th class="text-left font-medium px-5 py-3">CopyFactory</th>
+                  <th class="text-left font-medium px-5 py-3">State</th>
+                  <th class="text-left font-medium px-5 py-3">Plan</th>
+                  <th class="text-left font-medium px-5 py-3">Started</th>
+                  <th class="text-left font-medium px-5 py-3">Expires</th>
+                  <th class="text-left font-medium px-5 py-3">Connected</th>
+                  <th class="text-left font-medium px-5 py-3">Updated</th>
+                  <th class="text-left font-medium px-5 py-3">CF Synced</th>
+                </tr>
+              </thead>
+              <tbody id="mt5-body" class="divide-y divide-gray-100">
+                <tr><td colspan="11" class="px-5 py-8 text-center text-sm text-gray-400">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-3">
+            <span class="text-xs text-gray-500" id="mt5-count"></span>
+            <div class="flex items-center gap-2" id="mt5-pager"></div>
+          </div>
+        </div>
+
+        <p class="text-xs text-gray-400">
+          Auto-refreshes every 30s. Customer email + name from aurum-crm;
+          MT5 + subscription data from aurum-customers.
+        </p>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/supabase-client.js"></script>
+  <script src="assets/js/permissions.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script>
+    (async () => {
+      const ctx = await AurumAuth.guard({ permission: "mt5:view" });
+      AurumApp.boot(ctx);
+      AurumUI.setSubtitle("MT5 accounts customers have connected to AURUM");
+
+      const PAGE_SIZE = 50;
+      let allRows = [];   // most-recent fetch from edge function
+      let total   = 0;
+      let offset  = 0;
+      let busy    = false;
+
+      const $body    = document.getElementById("mt5-body");
+      const $count   = document.getElementById("mt5-count");
+      const $pager   = document.getElementById("mt5-pager");
+      const $search  = document.getElementById("f-search");
+      const $broker  = document.getElementById("f-broker");
+      const $status  = document.getElementById("f-status");
+      const $master  = document.getElementById("f-master");
+      const $refresh = document.getElementById("btn-refresh");
+
+      $search.addEventListener("input",  () => render());
+      $status.addEventListener("change", () => render());
+      $broker.addEventListener("change", () => { offset = 0; load(); });
+      $master.addEventListener("change", () => { offset = 0; load(); });
+      $refresh.addEventListener("click", () => load());
+
+      await load();
+      // Auto-refresh every 30s. setInterval keeps running across renders.
+      setInterval(() => { if (!busy) load({ silent: true }); }, 30_000);
+
+      function fnUrl() {
+        const base = (window.AURUM_CONFIG.SUPABASE_URL || "").replace(/\/+$/, "");
+        const path = window.AURUM_CONFIG.MT5_FUNCTION_PATH || "/functions/v1/admin-mt5-connections";
+        return base + path;
+      }
+
+      async function load(opts = {}) {
+        if (busy) return;
+        busy = true;
+        if (!opts.silent) {
+          $body.innerHTML = `<tr><td colspan="11" class="px-5 py-8 text-center text-sm text-gray-400">Loading…</td></tr>`;
+        }
+
+        let token;
+        try {
+          const sess = await AurumAuth.currentSession();
+          token = sess?.access_token;
+          if (!token) throw new Error("Session expired — sign in again.");
+        } catch (e) {
+          busy = false;
+          AurumUI.toast(e.message || "No session", "error");
+          return;
+        }
+
+        const params = new URLSearchParams();
+        params.set("limit",  PAGE_SIZE);
+        params.set("offset", offset);
+        const broker = $broker.value;
+        if (broker) params.set("broker", broker);
+        if ($master.checked) params.set("include_master", "true");
+
+        try {
+          const resp = await fetch(`${fnUrl()}?${params.toString()}`, {
+            method:  "GET",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "apikey":        window.AURUM_CONFIG.SUPABASE_ANON_KEY || "",
+            },
+          });
+          const txt = await resp.text();
+          let out = {}; try { out = txt ? JSON.parse(txt) : {}; } catch {}
+          if (!resp.ok || out.ok === false) {
+            throw new Error(out.error || `HTTP ${resp.status}`);
+          }
+          allRows = Array.isArray(out.rows) ? out.rows : [];
+          total   = Number.isFinite(out.total) ? out.total : allRows.length;
+          updateStats();
+          render();
+        } catch (e) {
+          $body.innerHTML =
+            `<tr><td colspan="11" class="px-5 py-8 text-center text-sm text-rose-600">${AurumUI.escapeHtml(e.message || "Failed to load")}</td></tr>`;
+          if (!opts.silent) AurumUI.toast(e.message || "Failed to load", "error");
+        } finally {
+          busy = false;
+        }
+      }
+
+      function bucketOf(row) {
+        const s = row.subscription_status;
+        if (s === "active" || s === "pending" || s === "not_subscribed") return s;
+        return "not_subscribed";
+      }
+
+      function updateStats() {
+        const stats = { total: total, deployed: 0, subscribed: 0, pending: 0, not_subscribed: 0 };
+        for (const r of allRows) {
+          if ((r.metaapi_state || "").toUpperCase() === "DEPLOYED") stats.deployed++;
+          const b = bucketOf(r);
+          if (b === "active")         stats.subscribed++;
+          if (b === "pending")        stats.pending++;
+          if (b === "not_subscribed") stats.not_subscribed++;
+        }
+        for (const k of Object.keys(stats)) {
+          const el = document.querySelector(`[data-stat="${k}"]`);
+          if (el) el.textContent = stats[k];
+        }
+      }
+
+      function filteredRows() {
+        const q   = $search.value.trim().toLowerCase();
+        const fst = $status.value;
+        return allRows.filter(r => {
+          if (fst && bucketOf(r) !== fst) return false;
+          if (q) {
+            const hay = [r.email, r.full_name, r.mt5_login, r.mt5_server, r.broker_name]
+              .filter(v => v !== null && v !== undefined).join(" ").toLowerCase();
+            if (!hay.includes(q)) return false;
+          }
+          return true;
+        });
+      }
+
+      function render() {
+        const rows = filteredRows();
+        if (rows.length === 0) {
+          $body.innerHTML = `<tr><td colspan="11" class="px-5 py-8 text-center text-sm text-gray-400">No MT5 connections match these filters.</td></tr>`;
+        } else {
+          $body.innerHTML = rows.map(r => {
+            const name    = r.full_name || "—";
+            const email   = r.email || `<span class="text-gray-400">unknown</span>`;
+            const initial = (r.full_name || r.email || "?").slice(0, 1).toUpperCase();
+            const broker  = r.broker_name || "—";
+            const server  = r.mt5_server  || "—";
+            const login   = r.mt5_login != null ? String(r.mt5_login) : "—";
+            const masterChip = r.is_master_owner
+              ? `<span class="ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset bg-aurum-gold/15 text-aurum-ink ring-aurum-gold/40">MASTER OWNER</span>`
+              : "";
+            const hasPlan = !!r.plan;
+            const rowCls  = hasPlan ? "" : "bg-amber-50";
+            return `
+              <tr class="${rowCls}">
+                <td class="px-5 py-3">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-aurum-gold/20 text-aurum-ink flex items-center justify-center font-semibold text-xs">${AurumUI.escapeHtml(initial)}</div>
+                    <div class="min-w-0">
+                      <div class="font-medium truncate flex items-center">${AurumUI.escapeHtml(name)}${masterChip}</div>
+                      <div class="text-xs text-gray-500 truncate">${typeof email === "string" && !email.startsWith("<") ? AurumUI.escapeHtml(email) : email}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-5 py-3 text-gray-700 font-mono tabular-nums">${AurumUI.escapeHtml(login)}</td>
+                <td class="px-5 py-3 text-gray-600">
+                  <div class="font-medium text-aurum-ink">${AurumUI.escapeHtml(broker)}</div>
+                  <div class="text-xs text-gray-500 truncate">${AurumUI.escapeHtml(server)}</div>
+                </td>
+                <td class="px-5 py-3">${copyFactoryBadge(r)}</td>
+                <td class="px-5 py-3">${stateBadge(r.metaapi_state)}</td>
+                <td class="px-5 py-3">${planCell(r.plan)}</td>
+                <td class="px-5 py-3 text-gray-600">${r.plan?.started_at ? AurumUI.fmtDate(r.plan.started_at) : '<span class="text-gray-400">—</span>'}</td>
+                <td class="px-5 py-3">${expiresCell(r.plan)}</td>
+                <td class="px-5 py-3 text-gray-600">${AurumUI.fmtDate(r.created_at)}</td>
+                <td class="px-5 py-3 text-gray-600">${r.updated_at ? AurumUI.fmtRelative(r.updated_at) : '<span class="text-gray-400">—</span>'}</td>
+                <td class="px-5 py-3 text-gray-600">${r.subscription?.synced_at ? AurumUI.fmtRelative(r.subscription.synced_at) : '<span class="text-gray-400">—</span>'}</td>
+              </tr>`;
+          }).join("");
+        }
+
+        const shown  = rows.length;
+        const pageEnd = Math.min(offset + allRows.length, total);
+        $count.textContent =
+          `Showing ${shown} (page rows ${total === 0 ? 0 : offset + 1}–${pageEnd} of ${total})`;
+        renderPager();
+      }
+
+      function renderPager() {
+        const hasPrev = offset > 0;
+        const hasNext = offset + PAGE_SIZE < total;
+        if (!hasPrev && !hasNext) { $pager.innerHTML = ""; return; }
+        $pager.innerHTML = `
+          <button data-pg="prev" ${hasPrev ? "" : "disabled"}
+            class="px-2 py-1 rounded-md border border-gray-200 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-40">‹ Prev</button>
+          <button data-pg="next" ${hasNext ? "" : "disabled"}
+            class="px-2 py-1 rounded-md border border-gray-200 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-40">Next ›</button>`;
+        $pager.querySelectorAll("[data-pg]").forEach(b => b.addEventListener("click", e => {
+          if (e.currentTarget.dataset.pg === "prev" && hasPrev) { offset = Math.max(0, offset - PAGE_SIZE); load(); }
+          if (e.currentTarget.dataset.pg === "next" && hasNext) { offset = offset + PAGE_SIZE; load(); }
+        }));
+      }
+
+      function copyFactoryBadge(r) {
+        if (r.is_master_owner) {
+          return badge("Master owner", "bg-aurum-gold/15 text-aurum-ink ring-aurum-gold/40");
+        }
+        const s = r.subscription_status;
+        if (s === "active") {
+          return badge("Subscribed", "bg-emerald-50 text-emerald-700 ring-emerald-600/20");
+        }
+        if (s === "pending") {
+          return badge("Pending", "bg-amber-50 text-amber-700 ring-amber-600/20");
+        }
+        return badge("Not subscribed", "bg-gray-100 text-gray-600 ring-gray-500/20");
+      }
+
+      function stateBadge(state) {
+        const s = (state || "").toUpperCase();
+        const cfg = {
+          DEPLOYED:    "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+          DEPLOYING:   "bg-sky-50 text-sky-700 ring-sky-600/20",
+          UNDEPLOYED:  "bg-gray-100 text-gray-700 ring-gray-500/20",
+          UNDEPLOYING: "bg-gray-100 text-gray-700 ring-gray-500/20",
+          FAILED:      "bg-rose-50 text-rose-700 ring-rose-600/20",
+        };
+        const cls = cfg[s] || "bg-gray-50 text-gray-600 ring-gray-500/20";
+        return badge(s || "—", cls);
+      }
+
+      function badge(label, cls) {
+        return `<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${cls}">${AurumUI.escapeHtml(label)}</span>`;
+      }
+
+      function planCell(plan) {
+        if (!plan || !plan.name) {
+          return `<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset bg-amber-100 text-amber-800 ring-amber-600/30">No package</span>`;
+        }
+        const parts = [];
+        if (plan.price_usd != null)      parts.push(`$${plan.price_usd}`);
+        if (plan.billing_cycle)          parts.push(plan.billing_cycle);
+        const meta = parts.join(" · ");
+        return `
+          <div class="font-medium text-aurum-ink truncate">${AurumUI.escapeHtml(plan.name)}</div>
+          <div class="text-xs text-gray-500 truncate">${meta ? AurumUI.escapeHtml(meta) : ""}</div>`;
+      }
+
+      function expiresCell(plan) {
+        const exp = plan?.expires_at;
+        if (!exp) return `<span class="text-gray-400">—</span>`;
+        const days = Math.ceil((new Date(exp).getTime() - Date.now()) / 86_400_000);
+        if (days < 0) {
+          return badge(`Expired ${Math.abs(days)}d ago`, "bg-rose-50 text-rose-700 ring-rose-600/20");
+        }
+        if (days <= 7) {
+          return badge(`Expires in ${days}d`, "bg-amber-50 text-amber-700 ring-amber-600/20");
+        }
+        return `<span class="text-gray-600">${AurumUI.escapeHtml(AurumUI.fmtDate(exp))}</span>`;
+      }
+    })();
+  </script>
+</body>
+</html>

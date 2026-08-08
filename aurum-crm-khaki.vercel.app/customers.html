@@ -1,0 +1,1148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Customers · AURUM CRM</title>
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: {
+      colors: { 'aurum-bg':'#FAFAFA','aurum-gold':'#D4AF37','aurum-ink':'#111827' },
+      fontFamily: { display: ['"Plus Jakarta Sans"','Inter','sans-serif'], sans: ['Inter','sans-serif'] }
+    }}};
+  </script>
+  <link rel="stylesheet" href="assets/css/app.css" />
+</head>
+<body class="min-h-screen bg-aurum-bg text-aurum-ink">
+
+  <div class="flex min-h-screen">
+    <aside id="aurum-sidebar" class="aurum-sidebar w-64 shrink-0 bg-white border-r border-gray-100"></aside>
+
+    <main class="flex-1 min-w-0">
+      <div id="aurum-topbar"></div>
+
+      <div class="px-6 py-6 max-w-7xl mx-auto space-y-5">
+        <!-- Stat cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-7 gap-4">
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Total customers</div>
+            <div class="font-display text-2xl font-semibold mt-1" data-stat="total">—</div>
+            <div class="text-xs text-gray-400 mt-1">All signups</div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Auto signups</div>
+            <div class="font-display text-2xl font-semibold mt-1 text-aurum-gold" data-stat="autoSignups">—</div>
+            <div class="text-xs text-gray-400 mt-1">From campaign window</div>
+          </div>
+          <button type="button" id="kpi-expiring"
+            class="bg-white rounded-xl border border-gray-100 p-5 text-left hover:border-amber-300 hover:shadow-sm transition focus-aurum">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Expiring Soon</div>
+            <div class="font-display text-2xl font-semibold mt-1 text-amber-600" data-stat="expiring">—</div>
+            <div class="text-xs text-amber-600 mt-1">Within 7 days — call to renew</div>
+          </button>
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Verification Failed</div>
+            <div class="font-display text-2xl font-semibold mt-1 text-rose-600" data-stat="verifying">—</div>
+            <div class="text-xs text-rose-600 mt-1">Auto-delete in 24h</div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Pending Review</div>
+            <div class="font-display text-2xl font-semibold mt-1 text-amber-600" data-stat="pending">—</div>
+            <div class="text-xs text-amber-600 mt-1">Awaiting team call</div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Active</div>
+            <div class="font-display text-2xl font-semibold mt-1 text-emerald-600" data-stat="active">—</div>
+            <div class="text-xs text-emerald-600 mt-1">Approved customers</div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Suspended</div>
+            <div class="font-display text-2xl font-semibold mt-1 text-gray-600" data-stat="suspended">—</div>
+            <div class="text-xs text-gray-500 mt-1">Blocked customers</div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-xl border border-gray-100 p-4 flex flex-wrap items-center gap-3">
+          <input id="f-search" type="search" placeholder="Search email, name, MT5…"
+            class="flex-1 min-w-[200px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum"/>
+          <select id="f-status" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum">
+            <option value="">All statuses</option>
+            <option value="verifying">Verification Failed</option>
+            <option value="pending">Pending Review</option>
+            <option value="active">Active</option>
+            <option value="suspended">Suspended</option>
+          </select>
+          <select id="f-verified" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum">
+            <option value="">All verification</option>
+            <option value="true">Verified</option>
+            <option value="false">Unverified</option>
+          </select>
+          <select id="f-subscription" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum">
+            <option value="">All subscriptions</option>
+            <option value="exp3">Expiring within 3 days</option>
+            <option value="exp7">Expiring within 7 days</option>
+            <option value="expired">Already expired</option>
+            <option value="active8">Active (8+ days left)</option>
+            <option value="none">No active subscription</option>
+          </select>
+          <select id="f-mode" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum">
+            <option value="">All modes</option>
+            <option value="auto">🎯 Auto only</option>
+            <option value="manual">✓ Manual only</option>
+            <option value="unknown">— Unknown</option>
+          </select>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-white rounded-xl border border-gray-100 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="aurum-table min-w-full text-sm">
+              <thead class="bg-gray-50 text-gray-500 uppercase text-xs tracking-wide">
+                <tr>
+                  <th class="text-left font-medium px-5 py-3">Customer</th>
+                  <th class="text-left font-medium px-5 py-3">Plan</th>
+                  <th class="text-left font-medium px-5 py-3">Started</th>
+                  <th class="text-left font-medium px-5 py-3">Expires</th>
+                  <th class="text-left font-medium px-5 py-3">Phone</th>
+                  <th class="text-left font-medium px-5 py-3">MT5 / Broker</th>
+                  <th class="text-left font-medium px-5 py-3">Status</th>
+                  <th class="text-left font-medium px-5 py-3">Source</th>
+                  <th class="text-left font-medium px-5 py-3">Registered</th>
+                  <th class="text-left font-medium px-5 py-3">Last login</th>
+                  <th class="text-right font-medium px-5 py-3">Credit</th>
+                  <th class="text-right font-medium px-5 py-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="customers-body" class="divide-y divide-gray-100">
+                <tr><td colspan="12" class="px-5 py-8 text-center text-sm text-gray-400">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-3">
+            <span class="text-xs text-gray-500" id="customers-count"></span>
+            <div class="flex items-center gap-2" id="customers-pager"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/supabase-client.js"></script>
+  <script src="assets/js/permissions.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script>
+    (async () => {
+      const ctx = await AurumAuth.guard({ permission: "customers:view" });
+      AurumApp.boot(ctx);
+      AurumUI.setSubtitle("Customers from aurumlive.com signups");
+
+      const role = ctx.profile.role;
+      const canEdit = AurumPerms.can(role, "customers:edit");
+
+      const PAGE_SIZE = 50;
+      const DAY_MS = 86_400_000;
+      let rows = [];
+      let page = 1;
+      const balanceById = new Map();
+      // Latest subscription per customer id (cross-DB enrichment). Persists
+      // across refetches so the table keeps plan/expiry data between refreshes.
+      const subById = new Map();
+
+      await load();
+      loadBalances();
+      loadSubscriptions();
+
+      // Auto-refresh every 30s. Filter selections live in the DOM <select>s and
+      // are read fresh at render time, so they persist across each refetch.
+      setInterval(() => { load(); loadBalances(); loadSubscriptions(); }, 30_000);
+
+      document.getElementById("f-search").addEventListener("input", () => { page = 1; render(); });
+      document.getElementById("f-status").addEventListener("change", () => { page = 1; render(); });
+      document.getElementById("f-verified").addEventListener("change", () => { page = 1; render(); });
+      document.getElementById("f-subscription").addEventListener("change", () => { page = 1; render(); });
+      document.getElementById("f-mode").addEventListener("change", () => { page = 1; render(); });
+
+      // "Expiring Soon" KPI → focus the table on the within-7-days bucket.
+      document.getElementById("kpi-expiring").addEventListener("click", () => {
+        document.getElementById("f-subscription").value = "exp7";
+        page = 1;
+        render();
+      });
+
+      async function load() {
+        // signup_mode is included; if that column is somehow absent (e.g. an
+        // environment where the migration hasn't run), retry without it so a
+        // missing field never blanks the whole customer list.
+        const BASE_COLS = "id,email,full_name,phone,mt5_account,broker,status,is_verified,registered_at,last_login_at";
+        let { data, error } = await sb.from("customer_profiles")
+          .select(`${BASE_COLS},signup_mode`)
+          .order("registered_at", { ascending: false });
+        if (error && /signup_mode/i.test(error.message || "")) {
+          ({ data, error } = await sb.from("customer_profiles")
+            .select(BASE_COLS)
+            .order("registered_at", { ascending: false }));
+        }
+        if (error) {
+          AurumUI.toast(error.message, "error");
+          document.getElementById("customers-body").innerHTML =
+            `<tr><td colspan="12" class="px-5 py-8 text-center text-sm text-rose-600">${AurumUI.escapeHtml(error.message)}</td></tr>`;
+          return;
+        }
+        rows = data || [];
+        updateStats();
+        render();
+      }
+
+      function apiBase() {
+        return (window.AURUM_CONFIG.WALLET_API_URL || "").replace(/\/+$/, "");
+      }
+
+      function fmtUsd(n) {
+        const v = Number(n);
+        if (!Number.isFinite(v)) return "$0.00";
+        return "$" + v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+
+      async function loadBalances() {
+        if (!apiBase()) return;
+        let token;
+        try {
+          const sess = await AurumAuth.currentSession();
+          token = sess?.access_token;
+          if (!token) return;
+        } catch { return; }
+
+        const tryFetch = async (q) => {
+          const resp = await fetch(`${apiBase()}/api/admin/customers/search?q=${encodeURIComponent(q)}`, {
+            headers: { "Authorization": `Bearer ${token}` },
+          });
+          const txt = await resp.text();
+          let out = {};
+          try { out = txt ? JSON.parse(txt) : {}; } catch {}
+          return resp.ok ? (Array.isArray(out.customers) ? out.customers : []) : [];
+        };
+
+        try {
+          let list = await tryFetch("");
+          if (list.length === 0) list = await tryFetch("@");
+          for (const c of list) {
+            if (c && c.id != null) balanceById.set(String(c.id), Number(c.balance) || 0);
+          }
+          render();
+        } catch { /* leave defaults */ }
+      }
+
+      function subFnUrl() {
+        const base = (window.AURUM_CONFIG.SUPABASE_URL || "").replace(/\/+$/, "");
+        const path = window.AURUM_CONFIG.CUSTOMER_SUBS_FUNCTION_PATH || "/functions/v1/crm-customer-subscriptions";
+        return base + path;
+      }
+
+      // Attach each customer's LATEST subscription (cross-DB enrichment from
+      // aurum-customers). Non-fatal: on any failure the table simply shows "—".
+      async function loadSubscriptions() {
+        let token;
+        try {
+          const sess = await AurumAuth.currentSession();
+          token = sess?.access_token;
+          if (!token) return;
+        } catch { return; }
+
+        try {
+          const resp = await fetch(subFnUrl(), {
+            method: "GET",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "apikey": window.AURUM_CONFIG.SUPABASE_ANON_KEY || "",
+            },
+          });
+          const txt = await resp.text();
+          let out = {}; try { out = txt ? JSON.parse(txt) : {}; } catch {}
+          if (!resp.ok || out.ok === false) return;   // leave "—" placeholders
+          const list = Array.isArray(out.rows) ? out.rows : [];
+          for (const s of list) {
+            if (s && s.user_id != null) subById.set(String(s.user_id), s);
+          }
+          updateStats();
+          render();
+        } catch { /* leave defaults */ }
+      }
+
+      // days_left, computed at render time using Date.now() (never hardcoded).
+      // Returns null when there is no subscription expiry to measure against.
+      function subDaysLeft(sub) {
+        if (!sub || !sub.subscription_expires_at) return null;
+        const exp = new Date(sub.subscription_expires_at).getTime();
+        if (!Number.isFinite(exp)) return null;
+        return Math.ceil((exp - Date.now()) / DAY_MS);
+      }
+
+      // A subscription counts as "active" for bucketing only if it has a start
+      // date and is not cancelled. Cancelled / never-subscribed fall into "none".
+      function subBucket(sub) {
+        if (!sub || !sub.subscription_started_at || sub.subscription_status === "cancelled") return "none";
+        const d = subDaysLeft(sub);
+        if (d == null) return "active";          // active but no expiry on file
+        if (d < 0)  return "expired";
+        if (d <= 3) return "exp3";
+        if (d <= 7) return "exp7";
+        return "active8";
+      }
+
+      function matchSubFilter(sub, f) {
+        if (!f) return true;
+        const b = subBucket(sub);
+        switch (f) {
+          case "exp3":    return b === "exp3";
+          case "exp7":    return b === "exp3" || b === "exp7";
+          case "expired": return b === "expired";
+          case "active8": return b === "active8";
+          case "none":    return b === "none";
+          default:        return true;
+        }
+      }
+
+      function updateStats() {
+        const stats = { total: rows.length, verifying: 0, pending: 0, active: 0, suspended: 0, expiring: 0, autoSignups: 0 };
+        for (const r of rows) {
+          if (stats[r.status] !== undefined) stats[r.status]++;
+          // Expiring Soon = within the next 7 days and not yet expired.
+          if (matchSubFilter(subById.get(String(r.id)), "exp7")) stats.expiring++;
+          // Auto signups = came in during an auto-approve (campaign) window AND active.
+          if (r.signup_mode === "auto" && r.status === "active") stats.autoSignups++;
+        }
+        for (const k of Object.keys(stats)) {
+          const el = document.querySelector(`[data-stat="${k}"]`);
+          if (el) el.textContent = stats[k];
+        }
+      }
+
+      function filteredRows() {
+        const q  = document.getElementById("f-search").value.trim().toLowerCase();
+        const fs = document.getElementById("f-status").value;
+        const fv = document.getElementById("f-verified").value;
+        const fsub = document.getElementById("f-subscription").value;
+        const fmode = document.getElementById("f-mode").value;
+        return rows.filter(r => {
+          if (fs && r.status !== fs) return false;
+          if (fv === "true"  && !r.is_verified) return false;
+          if (fv === "false" &&  r.is_verified) return false;
+          if (fsub && !matchSubFilter(subById.get(String(r.id)), fsub)) return false;
+          if (fmode === "auto"    && r.signup_mode !== "auto")   return false;
+          if (fmode === "manual"  && r.signup_mode !== "manual") return false;
+          if (fmode === "unknown" && r.signup_mode != null)      return false;
+          if (q) {
+            const hay = [r.email, r.full_name, r.mt5_account, r.broker, r.phone]
+              .filter(Boolean).join(" ").toLowerCase();
+            if (!hay.includes(q)) return false;
+          }
+          return true;
+        });
+      }
+
+      function render() {
+        const filtered = filteredRows();
+        const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+        if (page > totalPages) page = totalPages;
+        const slice = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+        const body = document.getElementById("customers-body");
+        if (slice.length === 0) {
+          body.innerHTML = `<tr><td colspan="12" class="px-5 py-8 text-center text-sm text-gray-400">No customers match these filters.</td></tr>`;
+        } else {
+          body.innerHTML = slice.map(r => {
+            const initials = (r.full_name || r.email).slice(0,1).toUpperCase();
+            const verifiedBadge = r.is_verified
+              ? `<span class="ml-1 inline-flex items-center text-emerald-600" title="Verified">
+                   <svg viewBox="0 0 24 24" class="w-3.5 h-3.5" fill="currentColor"><path d="M12 2l2.39 2.39 3.31-.61.61 3.31L20.7 9.39 18.31 12l2.39 2.61-2.39 2.39-.61 3.31-3.31-.61L12 22l-2.39-2.39-3.31.61-.61-3.31L3.3 14.61 5.69 12 3.3 9.39l2.39-2.39.61-3.31 3.31.61L12 2zm-1.1 13.6l5.66-5.66-1.42-1.41-4.24 4.24-2.12-2.12-1.41 1.41 3.53 3.54z"/></svg>
+                 </span>` : "";
+            const mt5 = [r.mt5_account, r.broker].filter(Boolean).join(" · ") || "—";
+            const phone = r.phone || "—";
+            const fullName = r.full_name || "—";
+            const sub = subById.get(String(r.id)) || null;
+            return `
+              <tr data-id="${AurumUI.escapeHtml(r.id)}" tabindex="0" role="button"
+                  aria-label="Open detail for ${AurumUI.escapeHtml(fullName)}"
+                  class="cursor-pointer hover:bg-gray-50 focus:bg-gray-50 focus:outline-none">
+                <td class="px-5 py-3">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-aurum-gold/20 text-aurum-ink flex items-center justify-center font-semibold text-xs">${AurumUI.escapeHtml(initials)}</div>
+                    <div class="min-w-0">
+                      <div class="font-medium truncate flex items-center">${AurumUI.escapeHtml(fullName)}${verifiedBadge}</div>
+                      <div class="text-xs text-gray-500 truncate">${AurumUI.escapeHtml(r.email)}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-5 py-3">${planCell(sub)}</td>
+                <td class="px-5 py-3 text-gray-600">${startedCell(sub)}</td>
+                <td class="px-5 py-3">${expiresCell(sub)}</td>
+                <td class="px-5 py-3 text-gray-600">${AurumUI.escapeHtml(phone)}</td>
+                <td class="px-5 py-3 text-gray-600">${AurumUI.escapeHtml(mt5)}</td>
+                <td class="px-5 py-3">${customerStatusBadge(r.status)}</td>
+                <td class="px-5 py-3">${signupModeBadge(r.signup_mode)}</td>
+                <td class="px-5 py-3 text-gray-600">${AurumUI.fmtDate(r.registered_at)}</td>
+                <td class="px-5 py-3 text-gray-600">${r.last_login_at ? AurumUI.fmtRelative(r.last_login_at) : '<span class="text-gray-400">never</span>'}</td>
+                <td class="px-5 py-3 text-right font-semibold text-aurum-ink tabular-nums">${AurumUI.escapeHtml(fmtUsd(balanceById.get(String(r.id)) ?? 0))}</td>
+                <td class="px-5 py-3 text-right">${rowActions(r)}</td>
+              </tr>`;
+          }).join("");
+          body.querySelectorAll("[data-act]").forEach(btn => btn.addEventListener("click", onAction));
+
+          // Click (or Enter/Space) anywhere on a row — except the inline action
+          // buttons — opens the customer detail modal.
+          body.querySelectorAll("tr[data-id]").forEach(tr => {
+            const open = (e) => {
+              if (e.target.closest("[data-act]")) return;   // let action buttons do their thing
+              const row = rows.find(r => String(r.id) === tr.dataset.id);
+              if (row) openCustomerDetail(row);
+            };
+            tr.addEventListener("click", open);
+            tr.addEventListener("keydown", (e) => {
+              if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(e); }
+            });
+          });
+        }
+
+        document.getElementById("customers-count").textContent =
+          `Showing ${slice.length} of ${filtered.length} customers (${rows.length} total)`;
+        renderPager(totalPages);
+      }
+
+      function renderPager(totalPages) {
+        const host = document.getElementById("customers-pager");
+        if (totalPages <= 1) { host.innerHTML = ""; return; }
+        host.innerHTML = `
+          <button data-pg="prev" ${page <= 1 ? "disabled" : ""}
+            class="px-2 py-1 rounded-md border border-gray-200 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-40">‹ Prev</button>
+          <span class="text-xs text-gray-500">Page ${page} / ${totalPages}</span>
+          <button data-pg="next" ${page >= totalPages ? "disabled" : ""}
+            class="px-2 py-1 rounded-md border border-gray-200 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-40">Next ›</button>`;
+        host.querySelectorAll("[data-pg]").forEach(b => b.addEventListener("click", e => {
+          if (e.currentTarget.dataset.pg === "prev" && page > 1) { page--; render(); }
+          if (e.currentTarget.dataset.pg === "next" && page < totalPages) { page++; render(); }
+        }));
+      }
+
+      // Same chip pattern as the MT5 Connections / Subscriptions pages:
+      // rounded, light bg, colored text, inset ring.
+      function chip(label, cls) {
+        return `<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${cls}">${AurumUI.escapeHtml(label)}</span>`;
+      }
+
+      function fmtDateShort(iso) {
+        if (!iso) return "—";
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return "—";
+        return d.toLocaleDateString(undefined, { dateStyle: "medium" });
+      }
+
+      // Only a CURRENTLY-active subscription (status active + not yet expired)
+      // is shown in the table. Expired / cancelled / never-subscribed all look
+      // identical here — just "—" — to cut visual noise for sales scanning the
+      // list. The full history (including lapsed subs) lives in the detail modal.
+      function subVisibleInTable(sub) {
+        if (!sub || !sub.plan_name) return false;
+        if (sub.subscription_status !== "active") return false;
+        const d = subDaysLeft(sub);
+        return d != null && d >= 0;
+      }
+
+      function planCell(sub) {
+        if (!subVisibleInTable(sub)) return '<span class="text-gray-400">—</span>';
+        const parts = [];
+        if (sub.plan_price_usd != null) parts.push("$" + sub.plan_price_usd);
+        if (sub.plan_billing_cycle)     parts.push(sub.plan_billing_cycle);
+        const meta = parts.join(" · ");
+        return `
+          <div class="font-semibold text-aurum-ink truncate">${AurumUI.escapeHtml(sub.plan_name)}</div>
+          ${meta ? `<div class="text-xs text-gray-500 truncate">${AurumUI.escapeHtml(meta)}</div>` : ""}`;
+      }
+
+      function startedCell(sub) {
+        if (!subVisibleInTable(sub)) return '<span class="text-gray-400">—</span>';
+        if (!sub.subscription_started_at) return '<span class="text-gray-400">—</span>';
+        return AurumUI.escapeHtml(fmtDateShort(sub.subscription_started_at));
+      }
+
+      function expiresCell(sub) {
+        if (!subVisibleInTable(sub)) return '<span class="text-gray-400">—</span>';
+        const d = subDaysLeft(sub);   // guaranteed >= 0 by subVisibleInTable
+        if (d <= 3) return chip(`in ${d}d`, "bg-rose-50 text-rose-700 ring-rose-600/20");     // critical — call now
+        if (d <= 7) return chip(`in ${d}d`, "bg-amber-50 text-amber-700 ring-amber-600/20");  // this week — warn
+        return `<span class="text-gray-600">${AurumUI.escapeHtml(fmtDateShort(sub.subscription_expires_at))}</span>`;
+      }
+
+      function customerStatusBadge(status) {
+        const cfg = {
+          verifying: { label: "Verification Failed", cls: "bg-rose-50 text-rose-700 ring-rose-600/20" },
+          pending:   { label: "Pending Review",      cls: "bg-amber-50 text-amber-700 ring-amber-600/20" },
+          active:    { label: "Active",              cls: "bg-emerald-50 text-emerald-700 ring-emerald-600/20" },
+          suspended: { label: "Suspended",           cls: "bg-gray-100 text-gray-700 ring-gray-500/20" },
+        };
+        const c = cfg[status] || { label: status || "—", cls: "bg-gray-50 text-gray-700 ring-gray-500/20" };
+        return `<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${c.cls}">${AurumUI.escapeHtml(c.label)}</span>`;
+      }
+
+      // Signup mode (SOURCE column). 'auto' = signed up during an auto-approve
+      // campaign window (gold badge); 'manual' = manual-approve window (gray);
+      // null = legacy row from before this feature — render a neutral em-dash so
+      // it is NOT misread as manual.
+      function signupModeBadge(mode) {
+        if (mode === "auto")   return chip("🎯 Auto",   "bg-aurum-gold/15 text-aurum-ink ring-aurum-gold/40");
+        if (mode === "manual") return chip("✓ Manual",  "bg-gray-100 text-gray-700 ring-gray-500/20");
+        return `<span class="text-gray-400">—</span>`;
+      }
+
+      // Lucide "Trash2" icon, inlined (this project ships vanilla SVGs, no lucide-react).
+      function trashIcon() {
+        return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>`;
+      }
+
+      function rowActions(r) {
+        if (!canEdit) return `<span class="text-xs text-gray-400">—</span>`;
+        const btns = [];
+        if (r.status === "verifying") {
+          btns.push(`<button data-act="activate" class="text-emerald-600 hover:text-emerald-700">✓ Activate</button>`);
+          btns.push(`<button data-act="suspend" class="text-rose-600 hover:text-rose-700">⏸ Suspend</button>`);
+          btns.push(`<button data-act="reset-verification" class="text-sky-600 hover:text-sky-700">🔄 Reset Verification</button>`);
+        } else if (r.status === "pending") {
+          btns.push(`<button data-act="activate" class="text-emerald-600 hover:text-emerald-700">✓ Activate</button>`);
+        } else if (r.status === "active") {
+          btns.push(`<button data-act="suspend" class="text-rose-600 hover:text-rose-700">⏸ Suspend</button>`);
+        } else if (r.status === "suspended") {
+          btns.push(`<button data-act="activate" class="text-emerald-600 hover:text-emerald-700">✓ Activate</button>`);
+        }
+        // Delete — destructive ghost button shown on EVERY row for
+        // super_admin/admin (canEdit). Sits after the status actions,
+        // separated by a small gap + divider.
+        const deleteBtn = `<button data-act="delete" title="ลบลูกค้า" class="inline-flex items-center gap-1 text-rose-600 hover:text-rose-700">${trashIcon()}<span>Delete</span></button>`;
+        const lead = btns.length
+          ? `${btns.join('<span class="text-gray-300">·</span>')}<span class="text-gray-200 mx-1">|</span>`
+          : "";
+        return `<div class="inline-flex items-center gap-3 text-xs font-medium">${lead}${deleteBtn}</div>`;
+      }
+
+      async function authHeaders() {
+        const sess = await AurumAuth.currentSession();
+        if (!sess?.access_token) throw new Error("Session expired — sign in again.");
+        return { "Authorization": `Bearer ${sess.access_token}` };
+      }
+
+      async function onAction(e) {
+        const tr  = e.currentTarget.closest("tr");
+        const id  = tr.dataset.id;
+        const row = rows.find(r => r.id === id);
+        if (!row) return;
+        const act = e.currentTarget.dataset.act;
+
+        if (act === "delete") {
+          openDeleteModal(row);
+          return;
+        }
+
+        if (act === "reset-verification") {
+          if (!window.confirm(`Reset OTP + email verification ของ ${row.email}? ลูกค้าจะต้อง verify ใหม่ทั้งหมด`)) return;
+          await resetVerification(row);
+          return;
+        }
+
+        if (act === "activate") {
+          const msg = row.status === "verifying"
+            ? `เปิดใช้งาน ${row.email}? ลูกค้านี้อยู่ในสถานะ Verification Failed — admin ยืนยันว่า verify จริงแล้วใช่ไหม?`
+            : `เปิดใช้งาน ${row.email}?`;
+          if (!window.confirm(msg)) return;
+          await setStatus(row, "active");
+          return;
+        }
+
+        if (act === "suspend") {
+          if (!window.confirm(`ระงับ ${row.email}?`)) return;
+          await setStatus(row, "suspended");
+          return;
+        }
+      }
+
+      // ============================================================
+      // Delete Customer — confirmation modal with guard rails.
+      // Loads a server-side "preview" (single read pass, no deletes) to
+      // populate the summary and decide whether force-confirm is needed,
+      // then fires the destructive cross-DB delete via the edge function.
+      // The server re-checks the guard on delete, so it stays authoritative
+      // even if the preview under-detected (e.g. MT5-only customers).
+      // ============================================================
+      let deleteOverlay   = null;
+      let deleteLastFocus = null;
+
+      function deleteFnUrl() {
+        const base = (window.AURUM_CONFIG.SUPABASE_URL || "").replace(/\/+$/, "");
+        const path = window.AURUM_CONFIG.DELETE_CUSTOMER_FUNCTION_PATH || "/functions/v1/crm-delete-customer";
+        return base + path;
+      }
+
+      async function callDeleteFn(payload) {
+        const sess = await AurumAuth.currentSession();
+        const token = sess?.access_token;
+        if (!token) throw new Error("เซสชันหมดอายุ — กรุณาเข้าสู่ระบบใหม่");
+        const resp = await fetch(deleteFnUrl(), {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "apikey": window.AURUM_CONFIG.SUPABASE_ANON_KEY || "",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+        const txt = await resp.text();
+        let out = {}; try { out = txt ? JSON.parse(txt) : {}; } catch {}
+        return { resp, out };
+      }
+
+      const REASON_OPTIONS = [
+        ["",                 "— เลือกเหตุผล (ไม่บังคับ) —"],
+        ["wrong_email",      "อีเมลผิด"],
+        ["wrong_phone",      "เบอร์โทรผิด"],
+        ["duplicate",        "บัญชีซ้ำ"],
+        ["customer_request", "ลูกค้าขอให้ลบ"],
+        ["test_account",     "บัญชีทดสอบ / ทีมงาน"],
+        ["other",            "อื่นๆ"],
+      ];
+
+      function closeDeleteModal() {
+        if (!deleteOverlay) return;
+        document.removeEventListener("keydown", deleteKeydown, true);
+        deleteOverlay.remove();
+        deleteOverlay = null;
+        if (deleteLastFocus && typeof deleteLastFocus.focus === "function") deleteLastFocus.focus();
+        deleteLastFocus = null;
+      }
+
+      function deleteKeydown(e) {
+        if (!deleteOverlay) return;
+        if (e.key === "Escape") { e.preventDefault(); closeDeleteModal(); return; }
+        if (e.key === "Tab") {
+          const f = deleteOverlay.querySelectorAll(
+            'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])');
+          if (!f.length) return;
+          const first = f[0], last = f[f.length - 1];
+          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
+      }
+
+      function summaryRow(label, valueHtml) {
+        return `<div class="flex items-start justify-between gap-4 py-1.5">
+            <span class="text-gray-500">${AurumUI.escapeHtml(label)}</span>
+            <span class="text-aurum-ink text-right font-medium">${valueHtml}</span>
+          </div>`;
+      }
+
+      function openDeleteModal(row) {
+        deleteLastFocus = document.activeElement;
+        deleteOverlay = document.createElement("div");
+        deleteOverlay.className = "fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm";
+        deleteOverlay.setAttribute("role", "dialog");
+        deleteOverlay.setAttribute("aria-modal", "true");
+        deleteOverlay.setAttribute("aria-label", "Delete customer");
+        deleteOverlay.innerHTML = `
+          <div class="w-full max-w-lg bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden max-h-[90vh] flex flex-col">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+              <h3 class="font-display text-lg font-semibold text-rose-700">ลบลูกค้า?</h3>
+              <button data-del-close aria-label="ปิด"
+                class="w-8 h-8 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-aurum-ink flex items-center justify-center text-xl leading-none">×</button>
+            </div>
+            <div class="overflow-y-auto px-6 py-5 space-y-4" data-del-body>
+              <div class="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3 text-sm" data-del-summary>
+                <div class="h-3.5 rounded bg-gray-200 animate-pulse mb-2"></div>
+                <div class="h-3.5 rounded bg-gray-200 animate-pulse mb-2"></div>
+                <div class="h-3.5 rounded bg-gray-200 animate-pulse w-2/3"></div>
+              </div>
+              <div data-del-error class="hidden rounded-lg bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-600/20 px-4 py-3 text-sm"></div>
+              <div>
+                <label class="block text-xs text-gray-500 mb-1">เหตุผล (ไม่บังคับ)</label>
+                <select data-del-reason class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum">
+                  ${REASON_OPTIONS.map(([v, l]) => `<option value="${AurumUI.escapeHtml(v)}">${AurumUI.escapeHtml(l)}</option>`).join("")}
+                </select>
+              </div>
+              <div data-del-force class="hidden">
+                <div class="rounded-lg bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-600/20 px-4 py-3 text-sm" data-del-force-msg></div>
+                <label class="block text-xs text-gray-500 mt-3 mb-1">พิมพ์ <span class="font-mono font-semibold">DELETE</span> เพื่อยืนยัน</label>
+                <input data-del-confirm-input type="text" autocomplete="off" placeholder="DELETE"
+                  class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum"/>
+              </div>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-2 shrink-0">
+              <button data-del-cancel class="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100">ยกเลิก</button>
+              <button data-del-go disabled
+                class="px-4 py-2 rounded-lg text-sm font-semibold bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-40 disabled:cursor-not-allowed">ลบถาวร</button>
+            </div>
+          </div>`;
+        document.body.appendChild(deleteOverlay);
+        deleteOverlay.addEventListener("mousedown", (e) => { if (e.target === deleteOverlay) closeDeleteModal(); });
+        deleteOverlay.querySelector("[data-del-close]").addEventListener("click", closeDeleteModal);
+        deleteOverlay.querySelector("[data-del-cancel]").addEventListener("click", closeDeleteModal);
+        document.addEventListener("keydown", deleteKeydown, true);
+        deleteOverlay.querySelector("[data-del-cancel]").focus();
+
+        loadDeletePreview(row);
+      }
+
+      function showDeleteError(msg) {
+        if (!deleteOverlay) return;
+        const el = deleteOverlay.querySelector("[data-del-error]");
+        el.textContent = msg;
+        el.classList.remove("hidden");
+      }
+
+      async function loadDeletePreview(row) {
+        let out, resp;
+        try {
+          ({ resp, out } = await callDeleteFn({ user_id: row.id, preview: true }));
+        } catch (e) {
+          if (!deleteOverlay) return;
+          renderDeleteSummaryFallback(row);
+          showDeleteError(e.message || "โหลดข้อมูลลูกค้าไม่สำเร็จ");
+          return;
+        }
+        if (!deleteOverlay) return;
+        if (!resp.ok || out.ok === false || !out.preview) {
+          if (resp.status === 404) {   // already gone — drop the row, close.
+            closeDeleteModal();
+            AurumUI.toast("ไม่พบลูกค้ารายนี้ (อาจถูกลบไปแล้ว)", "warn");
+            await load();
+            return;
+          }
+          renderDeleteSummaryFallback(row);
+          showDeleteError(out.detail || out.error || `HTTP ${resp.status}`);
+          return;
+        }
+        renderDeletePreview(row, out.preview);
+      }
+
+      function renderDeleteSummaryFallback(row) {
+        // Server preview failed — fall back to whatever the table already knows.
+        // needs_force stays false here; the server re-checks and 400s if needed.
+        const sub = subById.get(String(row.id)) || null;
+        renderDeletePreview(row, {
+          email: row.email, full_name: row.full_name, phone: row.phone,
+          registered_at: row.registered_at,
+          credit_usd: balanceById.get(String(row.id)) ?? 0,
+          subscription: sub ? { plan: sub.plan_name, status: sub.subscription_status, expires_at: sub.subscription_expires_at } : null,
+          mt5_count: null,
+          needs_force: false,
+          blockers: { active_subscription: false, credit_usd: 0, mt5_count: 0 },
+        });
+      }
+
+      function subSummaryHtml(sub) {
+        if (!sub || !sub.plan) return '<span class="text-gray-400">ไม่มี</span>';
+        const bits = [AurumUI.escapeHtml(sub.plan)];
+        if (sub.status) bits.push(AurumUI.escapeHtml(sub.status));
+        if (sub.expires_at) bits.push("หมดอายุ " + AurumUI.escapeHtml(fmtDateShort(sub.expires_at)));
+        return bits.join(" · ");
+      }
+
+      function renderDeletePreview(row, p) {
+        if (!deleteOverlay) return;
+        const summary = deleteOverlay.querySelector("[data-del-summary]");
+        const mt5Txt = p.mt5_count == null ? "—" : String(p.mt5_count);
+        summary.innerHTML =
+          summaryRow("อีเมล",          AurumUI.escapeHtml(p.email || "—")) +
+          summaryRow("ชื่อ",           AurumUI.escapeHtml(p.full_name || "—")) +
+          summaryRow("เบอร์โทร",       AurumUI.escapeHtml(p.phone || "—")) +
+          summaryRow("วันที่สมัคร",     AurumUI.escapeHtml(fmtDateShort(p.registered_at))) +
+          summaryRow("เครดิตคงเหลือ",   AurumUI.escapeHtml(fmtUsd(p.credit_usd ?? 0))) +
+          summaryRow("สมาชิก",         subSummaryHtml(p.subscription)) +
+          summaryRow("บัญชี MT5",       AurumUI.escapeHtml(mt5Txt));
+
+        // Replace the Delete button node so a re-render (force flip) drops any
+        // stale click handler, then wire fresh handlers against the new node.
+        const oldBtn = deleteOverlay.querySelector("[data-del-go]");
+        const goBtn  = oldBtn.cloneNode(true);
+        oldBtn.parentNode.replaceChild(goBtn, oldBtn);
+
+        const forceWrap = deleteOverlay.querySelector("[data-del-force]");
+        const reasonSel = deleteOverlay.querySelector("[data-del-reason]");
+        const needsForce = !!p.needs_force;
+
+        if (needsForce) {
+          forceWrap.classList.remove("hidden");
+          const b = p.blockers || {};
+          const reasons = [];
+          if (b.active_subscription)    reasons.push("มีสมาชิกที่ยัง active");
+          if (Number(b.credit_usd) > 0) reasons.push(`มีเครดิตคงเหลือ ${fmtUsd(b.credit_usd)}`);
+          if (Number(b.mt5_count) > 0)  reasons.push(`มีบัญชี MT5 ผูกอยู่ ${b.mt5_count} บัญชี`);
+          deleteOverlay.querySelector("[data-del-force-msg]").textContent =
+            "ลูกค้ารายนี้มีข้อมูลสำคัญ (" + (reasons.join(", ") || "ต้องยืนยัน") + ") — พิมพ์ DELETE เพื่อยืนยันการลบถาวร";
+          const input = deleteOverlay.querySelector("[data-del-confirm-input]");
+          const sync = () => { goBtn.disabled = input.value.trim() !== "DELETE"; };
+          input.oninput = sync;
+          sync();
+        } else {
+          forceWrap.classList.add("hidden");
+          goBtn.disabled = false;
+        }
+
+        goBtn.addEventListener("click", () => doDelete(row, {
+          getReason: () => reasonSel.value || null,
+          force: needsForce,
+          btn: goBtn,
+        }));
+      }
+
+      async function doDelete(row, opts) {
+        if (deleteOverlay) deleteOverlay.querySelector("[data-del-error]").classList.add("hidden");
+        opts.btn.disabled = true;
+        opts.btn.textContent = "กำลังลบ…";
+        let resp, out;
+        try {
+          ({ resp, out } = await callDeleteFn({
+            user_id: row.id,
+            reason:  opts.getReason(),
+            force:   opts.force,
+          }));
+        } catch (e) {
+          opts.btn.disabled = false;
+          opts.btn.textContent = "ลบถาวร";
+          showDeleteError(e.message || "ลบลูกค้าไม่สำเร็จ");
+          return;
+        }
+
+        if (resp.ok && out.ok) {
+          closeDeleteModal();
+          AurumUI.toast("ลบลูกค้าเรียบร้อยแล้ว", "success");
+          balanceById.delete(String(row.id));
+          subById.delete(String(row.id));
+          await load();
+          return;
+        }
+
+        opts.btn.textContent = "ลบถาวร";
+        if (out && out.error === "force_required") {
+          // Became a paying customer since preview (or preview fell back to
+          // client data). Flip into force mode rather than dead-ending.
+          const sub = subById.get(String(row.id)) || null;
+          renderDeletePreview(row, {
+            email: row.email, full_name: row.full_name, phone: row.phone,
+            registered_at: row.registered_at,
+            credit_usd: out.blockers?.credit_usd ?? 0,
+            subscription: sub ? { plan: sub.plan_name, status: sub.subscription_status, expires_at: sub.subscription_expires_at } : null,
+            mt5_count: out.blockers?.mt5_count ?? null,
+            needs_force: true,
+            blockers: out.blockers || {},
+          });
+          showDeleteError("ลูกค้ารายนี้มีข้อมูลสำคัญ — กรุณาพิมพ์ DELETE เพื่อยืนยัน");
+          return;
+        }
+        if (resp.status === 404) {
+          closeDeleteModal();
+          AurumUI.toast("ไม่พบลูกค้ารายนี้ (อาจถูกลบไปแล้ว)", "warn");
+          await load();
+          return;
+        }
+        opts.btn.disabled = false;
+        showDeleteError(out?.detail || out?.error || `HTTP ${resp.status}`);
+      }
+
+      async function resetVerification(row) {
+        if (!apiBase()) { AurumUI.toast("WALLET_API_URL is not configured.", "error"); return; }
+        try {
+          const resp = await fetch(`${apiBase()}/api/admin/customers/${encodeURIComponent(row.id)}/reset-verification`, {
+            method: "POST",
+            headers: { ...(await authHeaders()), "Content-Type": "application/json" },
+          });
+          const txt = await resp.text();
+          let out = {}; try { out = txt ? JSON.parse(txt) : {}; } catch {}
+          if (!resp.ok || out.ok === false) {
+            throw new Error(out.error || `HTTP ${resp.status}`);
+          }
+        } catch (err) {
+          AurumUI.toast(err.message || "Failed to reset verification", "error");
+          return;
+        }
+        await AurumAuth.log("customer.verification_reset", {
+          resource_type: "customer_profile",
+          resource_id: row.id,
+          metadata: { email: row.email },
+        });
+        AurumUI.toast("Verification reset", "success");
+        await load();
+      }
+
+      async function setStatus(row, next) {
+        if (!apiBase()) { AurumUI.toast("WALLET_API_URL is not configured.", "error"); return; }
+        try {
+          const resp = await fetch(`${apiBase()}/api/admin/customers/${encodeURIComponent(row.id)}/status`, {
+            method: "PATCH",
+            headers: { ...(await authHeaders()), "Content-Type": "application/json" },
+            body: JSON.stringify({ new_status: next }),
+          });
+          const txt = await resp.text();
+          let out = {}; try { out = txt ? JSON.parse(txt) : {}; } catch {}
+          if (!resp.ok || out.ok === false) {
+            throw new Error(out.error || `HTTP ${resp.status}`);
+          }
+        } catch (err) {
+          AurumUI.toast(err.message || "Failed to update status", "error");
+          return;
+        }
+        await AurumAuth.log("customer.status_changed", {
+          resource_type: "customer_profile",
+          resource_id: row.id,
+          metadata: { email: row.email, from: row.status, to: next },
+        });
+        AurumUI.toast("Status updated", "success");
+        await load();
+      }
+
+      // ============================================================
+      // Customer detail modal — full subscription + payment history.
+      // Vanilla overlay (no framework): ESC / backdrop / × to close,
+      // focus trap, ARIA dialog, skeleton + error/retry states.
+      // ============================================================
+      let detailOverlay  = null;
+      let detailLastFocus = null;
+
+      function detailFnUrl() {
+        const base = (window.AURUM_CONFIG.SUPABASE_URL || "").replace(/\/+$/, "");
+        const path = window.AURUM_CONFIG.CUSTOMER_DETAIL_FUNCTION_PATH || "/functions/v1/crm-customer-detail";
+        return base + path;
+      }
+
+      function detailKeydown(e) {
+        if (!detailOverlay) return;
+        if (e.key === "Escape") { e.preventDefault(); closeCustomerDetail(); return; }
+        if (e.key === "Tab") {
+          const f = detailOverlay.querySelectorAll(
+            'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])');
+          if (!f.length) return;
+          const first = f[0], last = f[f.length - 1];
+          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
+      }
+
+      function closeCustomerDetail() {
+        if (!detailOverlay) return;
+        document.removeEventListener("keydown", detailKeydown, true);
+        detailOverlay.remove();
+        detailOverlay = null;
+        if (detailLastFocus && typeof detailLastFocus.focus === "function") detailLastFocus.focus();
+        detailLastFocus = null;
+      }
+
+      function openCustomerDetail(row) {
+        detailLastFocus = document.activeElement;
+        detailOverlay = document.createElement("div");
+        detailOverlay.className = "fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm";
+        detailOverlay.setAttribute("role", "dialog");
+        detailOverlay.setAttribute("aria-modal", "true");
+        detailOverlay.setAttribute("aria-label", "Customer detail");
+        detailOverlay.innerHTML = `
+          <div class="w-full max-w-3xl bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden max-h-[90vh] flex flex-col">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+              <h3 class="font-display text-lg font-semibold text-aurum-ink">Customer Detail</h3>
+              <button data-detail-close aria-label="Close"
+                class="w-8 h-8 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-aurum-ink flex items-center justify-center text-xl leading-none">×</button>
+            </div>
+            <div data-detail-body class="overflow-y-auto"></div>
+          </div>`;
+        document.body.appendChild(detailOverlay);
+        detailOverlay.addEventListener("mousedown", (e) => { if (e.target === detailOverlay) closeCustomerDetail(); });
+        detailOverlay.querySelector("[data-detail-close]").addEventListener("click", closeCustomerDetail);
+        document.addEventListener("keydown", detailKeydown, true);
+        detailOverlay.querySelector("[data-detail-close]").focus();
+
+        loadDetail(detailOverlay.querySelector("[data-detail-body]"), row);
+      }
+
+      async function loadDetail(bodyEl, row) {
+        renderDetailLoading(bodyEl, row);
+        try {
+          const sess  = await AurumAuth.currentSession();
+          const token = sess?.access_token;
+          if (!token) throw new Error("Session expired — sign in again.");
+          const resp = await fetch(`${detailFnUrl()}?user_id=${encodeURIComponent(row.id)}`, {
+            headers: { "Authorization": `Bearer ${token}`, "apikey": window.AURUM_CONFIG.SUPABASE_ANON_KEY || "" },
+          });
+          const txt = await resp.text();
+          let out = {}; try { out = txt ? JSON.parse(txt) : {}; } catch {}
+          if (!resp.ok || out.ok === false) throw new Error(out.detail || out.error || `HTTP ${resp.status}`);
+          if (!detailOverlay) return;   // closed while loading
+          renderDetailContent(bodyEl, out);
+        } catch (e) {
+          if (!detailOverlay) return;
+          renderDetailError(bodyEl, e.message || "Failed to load", row);
+        }
+      }
+
+      function detailAvatar(name, email) {
+        const initial = (name || email || "?").slice(0, 1).toUpperCase();
+        return `<div class="w-12 h-12 rounded-full bg-aurum-gold/20 text-aurum-ink flex items-center justify-center font-semibold">${AurumUI.escapeHtml(initial)}</div>`;
+      }
+
+      function detailHeaderHtml(c) {
+        const verify = c.verification_status === "verified"
+          ? `<span class="text-emerald-600">✓ Verified</span>`
+          : `<span class="text-gray-500">Unverified</span>`;
+        const source = c.signup_mode === "auto"
+          ? `<span class="text-aurum-ink font-medium">🎯 Auto approve</span> · <span class="text-gray-500">Signed up while auto mode was ON</span>`
+          : c.signup_mode === "manual"
+            ? `<span class="text-aurum-ink font-medium">✓ Manual approve</span> · <span class="text-gray-500">Signed up while manual mode was ON</span>`
+            : `<span class="text-gray-500">— Unknown (legacy signup, before this feature)</span>`;
+        const contact = [c.email, c.phone].filter(Boolean).map(x => AurumUI.escapeHtml(x)).join(" · ");
+        return `
+          <div class="px-6 py-5 border-b border-gray-100">
+            <div class="flex items-start gap-4">
+              ${detailAvatar(c.full_name, c.email)}
+              <div class="min-w-0 text-sm space-y-1">
+                <div class="font-display text-base font-semibold text-aurum-ink truncate">${AurumUI.escapeHtml(c.full_name || "—")}</div>
+                <div class="text-gray-500 truncate">${contact || "—"}</div>
+                <div class="text-gray-600">Status: ${customerStatusBadge(c.status)} · Registered: ${AurumUI.escapeHtml(fmtDateShort(c.registered_at))}</div>
+                <div class="text-gray-600">Verification: ${verify} · Credit: <span class="font-semibold text-aurum-ink tabular-nums">${AurumUI.escapeHtml(fmtUsd(c.credit_usd ?? 0))}</span></div>
+                <div class="text-gray-600">Source: ${source}</div>
+              </div>
+            </div>
+          </div>`;
+      }
+
+      function renderDetailLoading(bodyEl, row) {
+        const c = {
+          full_name: row.full_name, email: row.email, phone: row.phone,
+          status: row.status, registered_at: row.registered_at,
+          verification_status: row.is_verified ? "verified" : "unverified",
+          signup_mode: row.signup_mode ?? null,
+          credit_usd: balanceById.get(String(row.id)) ?? 0,
+        };
+        const line = `<div class="h-3.5 rounded bg-gray-100 animate-pulse"></div>`;
+        bodyEl.innerHTML = `
+          ${detailHeaderHtml(c)}
+          <div class="px-6 py-5 space-y-3">${line}${line}${line}${line}</div>`;
+      }
+
+      function renderDetailError(bodyEl, msg, row) {
+        bodyEl.innerHTML = `
+          <div class="px-6 py-10 text-center">
+            <p class="text-sm text-rose-600">Couldn't load customer detail — ${AurumUI.escapeHtml(msg)}</p>
+            <button data-detail-retry class="mt-4 px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-700 hover:bg-gray-50">Retry</button>
+          </div>`;
+        bodyEl.querySelector("[data-detail-retry]").addEventListener("click", () => loadDetail(bodyEl, row));
+      }
+
+      function renderDetailContent(bodyEl, out) {
+        const c    = out.customer || {};
+        const subs = Array.isArray(out.subscriptions) ? out.subscriptions : [];
+        const pays = Array.isArray(out.payments) ? out.payments : [];
+        const emptyBoth = subs.length === 0 && pays.length === 0;
+        bodyEl.innerHTML = `
+          ${detailHeaderHtml(c)}
+          ${emptyBoth ? `<div class="mx-6 mt-4 rounded-lg bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-600/20 px-4 py-3 text-sm">This customer hasn't made any purchases or deposits yet.</div>` : ""}
+          <div class="px-6 pt-4">
+            <div class="flex items-center gap-2" role="tablist" aria-label="Customer history">
+              <button data-tab="subs" role="tab" class="detail-tab px-3 py-1.5 rounded-full text-sm font-medium">Subscriptions (${subs.length})</button>
+              <button data-tab="pays" role="tab" class="detail-tab px-3 py-1.5 rounded-full text-sm font-medium">Payments (${pays.length})</button>
+            </div>
+          </div>
+          <div class="px-6 py-4" data-tab-panel></div>`;
+
+        const tabBtns = bodyEl.querySelectorAll(".detail-tab");
+        const panel   = bodyEl.querySelector("[data-tab-panel]");
+        let active = "subs";
+        function paint() {
+          tabBtns.forEach(b => {
+            const on = b.dataset.tab === active;
+            b.className = "detail-tab px-3 py-1.5 rounded-full text-sm font-medium " +
+              (on ? "bg-aurum-gold/20 text-aurum-ink" : "bg-gray-100 text-gray-600 hover:bg-gray-200");
+            b.setAttribute("aria-selected", on ? "true" : "false");
+          });
+          panel.innerHTML = active === "subs" ? subsTableHtml(subs) : paysTableHtml(pays);
+        }
+        tabBtns.forEach(b => b.addEventListener("click", () => { active = b.dataset.tab; paint(); }));
+        paint();
+      }
+
+      function detailTable(headers, rowsHtml) {
+        const head = headers.map(h => `<th class="text-left font-medium px-3 py-2">${AurumUI.escapeHtml(h)}</th>`).join("");
+        return `
+          <div class="overflow-x-auto border border-gray-100 rounded-lg">
+            <table class="min-w-full text-sm">
+              <thead class="bg-gray-50 text-gray-500 uppercase text-xs tracking-wide"><tr>${head}</tr></thead>
+              <tbody class="divide-y divide-gray-100">${rowsHtml}</tbody>
+            </table>
+          </div>`;
+      }
+
+      function subHistoryStatusBadge(s) {
+        const st = (s.status || "").toLowerCase();
+        if (st === "cancelled") return chip("Cancelled", "bg-rose-50 text-rose-700 ring-rose-600/20");
+        const exp = s.expires_at ? new Date(s.expires_at).getTime() : null;
+        const expired = st === "expired" || (exp != null && exp < Date.now());
+        if (expired) return chip("Expired", "bg-gray-100 text-gray-600 ring-gray-500/20");
+        if (st === "active") return chip("Active", "bg-emerald-50 text-emerald-700 ring-emerald-600/20");
+        return chip(s.status || "—", "bg-gray-50 text-gray-700 ring-gray-500/20");
+      }
+
+      function subsTableHtml(subs) {
+        if (!subs.length) {
+          return `<p class="text-sm text-gray-400 py-6 text-center">No subscription history yet — customer has never purchased a plan.</p>`;
+        }
+        const rowsHtml = subs.map(s => {
+          const price = s.plan_price_usd != null ? "$" + s.plan_price_usd : "—";
+          const cycle = s.plan_billing_cycle ? ` · ${s.plan_billing_cycle}` : "";
+          return `<tr>
+            <td class="px-3 py-2"><div class="font-medium text-aurum-ink">${AurumUI.escapeHtml(s.plan_name || "—")}</div></td>
+            <td class="px-3 py-2 text-gray-600">${AurumUI.escapeHtml(price + cycle)}</td>
+            <td class="px-3 py-2 text-gray-600">${AurumUI.escapeHtml(fmtDateShort(s.started_at))}</td>
+            <td class="px-3 py-2 text-gray-600">${AurumUI.escapeHtml(fmtDateShort(s.expires_at))}</td>
+            <td class="px-3 py-2">${subHistoryStatusBadge(s)}</td>
+            <td class="px-3 py-2">${s.auto_renew ? chip("ON", "bg-emerald-50 text-emerald-700 ring-emerald-600/20") : chip("OFF", "bg-gray-100 text-gray-600 ring-gray-500/20")}</td>
+          </tr>`;
+        }).join("");
+        return detailTable(["Plan", "Price", "Started", "Expires", "Status", "Auto-renew"], rowsHtml);
+      }
+
+      function paymentStatusBadge(status) {
+        const s = (status || "").toLowerCase();
+        const cfg = {
+          paid:      "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+          completed: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+          pending:   "bg-amber-50 text-amber-700 ring-amber-600/20",
+          failed:    "bg-rose-50 text-rose-700 ring-rose-600/20",
+          expired:   "bg-gray-100 text-gray-600 ring-gray-500/20",
+        };
+        return chip(status || "—", cfg[s] || "bg-gray-50 text-gray-700 ring-gray-500/20");
+      }
+
+      function paysTableHtml(pays) {
+        if (!pays.length) {
+          return `<p class="text-sm text-gray-400 py-6 text-center">No payment history yet — customer has never deposited.</p>`;
+        }
+        const rowsHtml = pays.map(p => {
+          const isInet = p.source === "inet";
+          const sourceLabel = isInet ? "INET PromptPay" : ("Wallet" + (p.wallet_type ? ` · ${p.wallet_type}` : ""));
+          // Amounts are numbers we formatted ourselves — safe to inline; notes are escaped.
+          const amount = isInet
+            ? (p.amount_thb != null ? `฿${Number(p.amount_thb).toLocaleString()}` : "—") +
+              (p.amount_usd != null ? ` <span class="text-gray-400">($${p.amount_usd})</span>` : "")
+            : (p.amount_usd != null ? AurumUI.escapeHtml(fmtUsd(p.amount_usd)) : "—");
+          return `<tr>
+            <td class="px-3 py-2 text-gray-600">${AurumUI.escapeHtml(fmtDateShort(p.created_at))}</td>
+            <td class="px-3 py-2 font-medium text-aurum-ink tabular-nums">${amount}</td>
+            <td class="px-3 py-2 text-gray-600">${AurumUI.escapeHtml(sourceLabel)}</td>
+            <td class="px-3 py-2">${paymentStatusBadge(p.status)}</td>
+            <td class="px-3 py-2 text-gray-500">${AurumUI.escapeHtml(p.notes || "—")}</td>
+          </tr>`;
+        }).join("");
+        return detailTable(["Date", "Amount", "Source", "Status", "Notes"], rowsHtml);
+      }
+    })();
+  </script>
+</body>
+</html>

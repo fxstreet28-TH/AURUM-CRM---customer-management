@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Users · AURUM CRM</title>
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: {
+      colors: { 'aurum-bg':'#FAFAFA','aurum-gold':'#D4AF37','aurum-ink':'#111827' },
+      fontFamily: { display: ['"Plus Jakarta Sans"','Inter','sans-serif'], sans: ['Inter','sans-serif'] }
+    }}};
+  </script>
+  <link rel="stylesheet" href="assets/css/app.css" />
+</head>
+<body class="min-h-screen bg-aurum-bg text-aurum-ink">
+
+  <div class="flex min-h-screen">
+    <aside id="aurum-sidebar" class="aurum-sidebar w-64 shrink-0 bg-white border-r border-gray-100"></aside>
+
+    <main class="flex-1 min-w-0">
+      <div id="aurum-topbar"></div>
+
+      <div class="px-6 py-6 max-w-7xl mx-auto space-y-5">
+        <!-- Filters -->
+        <div class="bg-white rounded-xl border border-gray-100 p-4 flex flex-wrap items-center gap-3">
+          <input id="f-search" type="search" placeholder="Search email or name…"
+            class="flex-1 min-w-[200px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum"/>
+          <select id="f-role" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum">
+            <option value="">All roles</option>
+            <option value="super_admin">Super Admin</option>
+            <option value="admin">Admin</option>
+            <option value="manager">Manager</option>
+            <option value="operator">Operator</option>
+            <option value="viewer">Viewer</option>
+          </select>
+          <select id="f-status" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum">
+            <option value="">All statuses</option>
+            <option value="active">Active</option>
+            <option value="invited">Invited</option>
+            <option value="suspended">Suspended</option>
+          </select>
+          <button id="btn-create" class="hidden bg-aurum-gold text-aurum-ink font-semibold rounded-lg px-4 py-2 text-sm hover:brightness-95">
+            + Create user
+          </button>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-white rounded-xl border border-gray-100 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="aurum-table min-w-full text-sm">
+              <thead class="bg-gray-50 text-gray-500 uppercase text-xs tracking-wide">
+                <tr>
+                  <th class="text-left font-medium px-5 py-3">User</th>
+                  <th class="text-left font-medium px-5 py-3">Role</th>
+                  <th class="text-left font-medium px-5 py-3">Status</th>
+                  <th class="text-left font-medium px-5 py-3">Last login</th>
+                  <th class="text-left font-medium px-5 py-3">Created</th>
+                  <th class="text-right font-medium px-5 py-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="users-body" class="divide-y divide-gray-100">
+                <tr><td colspan="6" class="px-5 py-8 text-center text-sm text-gray-400">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="px-5 py-3 border-t border-gray-100 text-xs text-gray-500" id="users-count"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/supabase-client.js"></script>
+  <script src="assets/js/permissions.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script>
+    (async () => {
+      const ctx = await AurumAuth.guard({ permission: "users:view" });
+      AurumApp.boot(ctx);
+      AurumUI.setSubtitle("Manage AURUM AI user accounts");
+
+      const role = ctx.profile.role;
+      const canCreate  = AurumPerms.can(role, "users:create");
+      const canEdit    = AurumPerms.can(role, "users:edit");
+      const canSuspend = AurumPerms.can(role, "users:suspend");
+      const canReset   = AurumPerms.can(role, "users:reset_pw");
+      const canDelete  = AurumPerms.can(role, "users:delete");
+      const canAssign  = AurumPerms.can(role, "users:assign_role");
+
+      if (canCreate) document.getElementById("btn-create").classList.remove("hidden");
+
+      let rows = [];
+      await load();
+
+      document.getElementById("f-search").addEventListener("input", render);
+      document.getElementById("f-role").addEventListener("change", render);
+      document.getElementById("f-status").addEventListener("change", render);
+      document.getElementById("btn-create").addEventListener("click", openCreate);
+
+      async function load() {
+        const { data, error } = await sb.from("profiles")
+          .select("id,email,full_name,role,status,must_change_pw,last_login_at,created_at")
+          .order("created_at", { ascending: false });
+        if (error) { AurumUI.toast(error.message, "error"); return; }
+        rows = data || [];
+        render();
+      }
+
+      function render() {
+        const q   = document.getElementById("f-search").value.trim().toLowerCase();
+        const fr  = document.getElementById("f-role").value;
+        const fs  = document.getElementById("f-status").value;
+        const filtered = rows.filter(r =>
+          (!q  || (r.email || "").toLowerCase().includes(q) || (r.full_name || "").toLowerCase().includes(q)) &&
+          (!fr || r.role === fr) &&
+          (!fs || r.status === fs)
+        );
+        const body = document.getElementById("users-body");
+        if (filtered.length === 0) {
+          body.innerHTML = `<tr><td colspan="6" class="px-5 py-8 text-center text-sm text-gray-400">No users match these filters.</td></tr>`;
+        } else {
+          body.innerHTML = filtered.map(r => {
+            const actions = rowActions(r);
+            const initials = (r.full_name || r.email).slice(0,1).toUpperCase();
+            return `
+              <tr data-id="${AurumUI.escapeHtml(r.id)}">
+                <td class="px-5 py-3">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-aurum-gold/20 text-aurum-ink flex items-center justify-center font-semibold text-xs">${AurumUI.escapeHtml(initials)}</div>
+                    <div class="min-w-0">
+                      <div class="font-medium truncate">${AurumUI.escapeHtml(r.full_name || "—")}</div>
+                      <div class="text-xs text-gray-500 truncate">${AurumUI.escapeHtml(r.email)}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-5 py-3">${AurumUI.roleBadge(r.role)}</td>
+                <td class="px-5 py-3">${AurumUI.statusBadge(r.status)}</td>
+                <td class="px-5 py-3 text-gray-600">${AurumUI.fmtRelative(r.last_login_at)}</td>
+                <td class="px-5 py-3 text-gray-600">${AurumUI.fmtDate(r.created_at)}</td>
+                <td class="px-5 py-3 text-right">${actions}</td>
+              </tr>`;
+          }).join("");
+          body.querySelectorAll("[data-act]").forEach(btn => btn.addEventListener("click", onAction));
+        }
+        document.getElementById("users-count").textContent =
+          `Showing ${filtered.length} of ${rows.length} users`;
+      }
+
+      function rowActions(r) {
+        const self = r.id === ctx.profile.id;
+        const btns = [];
+        if (canEdit) btns.push(`<button data-act="edit"    class="text-gray-600 hover:text-aurum-ink">Edit</button>`);
+        if (canSuspend && !self)
+          btns.push(`<button data-act="toggle"  class="text-gray-600 hover:text-aurum-ink">${r.status === "suspended" ? "Reactivate" : "Suspend"}</button>`);
+        if (canReset && !self) btns.push(`<button data-act="reset"   class="text-gray-600 hover:text-aurum-ink">Reset PW</button>`);
+        if (canDelete && !self)
+          btns.push(`<button data-act="delete"  class="text-rose-600 hover:text-rose-700">Delete</button>`);
+        return btns.length
+          ? `<div class="inline-flex items-center gap-3 text-xs font-medium">${btns.join('<span class="text-gray-300">·</span>')}</div>`
+          : `<span class="text-xs text-gray-400">—</span>`;
+      }
+
+      async function onAction(e) {
+        const tr  = e.currentTarget.closest("tr");
+        const id  = tr.dataset.id;
+        const row = rows.find(r => r.id === id);
+        const act = e.currentTarget.dataset.act;
+        if (act === "edit")    return openEdit(row);
+        if (act === "toggle")  return toggleSuspend(row);
+        if (act === "reset")   return resetPassword(row);
+        if (act === "delete")  return deleteUser(row);
+      }
+
+      // -------- Create (invite) ---------------------------------------
+      async function openCreate() {
+        const roleOptions = AurumPerms.ROLES
+          .filter(r => canAssign || !["super_admin","admin"].includes(r))
+          .filter(r => role === "super_admin" || r !== "super_admin")
+          .map(r => `<option value="${r}">${AurumUI.escapeHtml(AurumPerms.ROLE_LABELS[r])}</option>`).join("");
+
+        await AurumUI.modal({
+          title: "Invite new user",
+          confirmLabel: "Send invite",
+          bodyHtml: `
+            <div class="space-y-4">
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Email</label>
+                <input name="email" type="email" required class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum"/>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Full name</label>
+                <input name="full_name" type="text" class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum"/>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Role</label>
+                <select name="role" class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum">${roleOptions}</select>
+              </div>
+              <p class="text-xs text-gray-500">A temporary password will be emailed; user must change it on first login.</p>
+            </div>`,
+          onConfirm: async (wrap) => {
+            const email     = wrap.querySelector("[name=email]").value.trim().toLowerCase();
+            const full_name = wrap.querySelector("[name=full_name]").value.trim();
+            const roleSel   = wrap.querySelector("[name=role]").value;
+            if (!email) { AurumUI.toast("Email is required", "error"); return false; }
+            const sess = await AurumAuth.currentSession();
+            if (!sess?.access_token) {
+              AurumUI.toast("Session expired — sign in again", "error");
+              return false;
+            }
+            const url  = `${window.AURUM_CONFIG.SUPABASE_URL}${window.AURUM_CONFIG.INVITE_FUNCTION_PATH}`;
+            let resp, rawText = "", out = {};
+            try {
+              resp = await fetch(url, {
+                method: "POST",
+                headers: {
+                  "Content-Type":  "application/json",
+                  "Authorization": `Bearer ${sess.access_token}`,
+                  "apikey":        window.AURUM_CONFIG.SUPABASE_ANON_KEY,
+                },
+                body: JSON.stringify({ email, full_name, role: roleSel }),
+              });
+              rawText = await resp.text();
+              try { out = rawText ? JSON.parse(rawText) : {}; } catch { /* non-JSON body */ }
+            } catch (netErr) {
+              console.error("invite-user network error", netErr);
+              AurumUI.toast(`Invite failed (network): ${netErr.message || netErr}`, "error");
+              return false;
+            }
+            if (!resp.ok) {
+              console.error("invite-user error", resp.status, rawText);
+              const detail = out.error || (rawText ? rawText.slice(0, 180) : resp.statusText);
+              AurumUI.toast(`Invite failed (${resp.status}): ${detail}`, "error");
+              return false;
+            }
+            const emailNote = out.email_error
+              ? `email failed: ${String(out.email_error).slice(0, 120)}`
+              : `email ${out.email_status}`;
+            AurumUI.toast(`Invite sent to ${email} (${emailNote})`,
+              out.email_status === "sent" ? "success" : "warn");
+            await load();
+            return true;
+          },
+        });
+      }
+
+      // -------- Edit --------------------------------------------------
+      async function openEdit(row) {
+        const self = row.id === ctx.profile.id;
+        const lockRole = !canAssign || (row.role === "super_admin" && role !== "super_admin");
+        const roleOptions = AurumPerms.ROLES
+          .filter(r => role === "super_admin" || r !== "super_admin")
+          .map(r => `<option value="${r}" ${r === row.role ? "selected":""}>${AurumUI.escapeHtml(AurumPerms.ROLE_LABELS[r])}</option>`).join("");
+
+        await AurumUI.modal({
+          title: `Edit ${row.email}`,
+          bodyHtml: `
+            <div class="space-y-4">
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Full name</label>
+                <input name="full_name" type="text" value="${AurumUI.escapeHtml(row.full_name || "")}" class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum"/>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Role ${lockRole ? "(read-only)" : ""}</label>
+                <select name="role" ${lockRole ? "disabled" : ""} class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum ${lockRole ? "bg-gray-50 text-gray-500":""}">${roleOptions}</select>
+              </div>
+              ${self ? '<p class="text-xs text-amber-600">You can’t change your own role or status.</p>' : ''}
+            </div>`,
+          onConfirm: async (wrap) => {
+            const patch = { full_name: wrap.querySelector("[name=full_name]").value.trim() };
+            if (!lockRole && !self) patch.role = wrap.querySelector("[name=role]").value;
+            const { error } = await sb.from("profiles").update(patch).eq("id", row.id);
+            if (error) { AurumUI.toast(error.message, "error"); return false; }
+            await AurumAuth.log("user.updated", { resource_type: "profile", resource_id: row.id, metadata: patch });
+            AurumUI.toast("User updated", "success");
+            await load();
+            return true;
+          },
+        });
+      }
+
+      // -------- Suspend / reactivate ----------------------------------
+      async function toggleSuspend(row) {
+        const next = row.status === "suspended" ? "active" : "suspended";
+        const ok = await AurumUI.modal({
+          title: next === "suspended" ? "Suspend user?" : "Reactivate user?",
+          confirmLabel: next === "suspended" ? "Suspend" : "Reactivate",
+          confirmClass: next === "suspended" ? "bg-rose-600 text-white hover:bg-rose-700" : "bg-emerald-600 text-white hover:bg-emerald-700",
+          bodyHtml: `<p class="text-sm text-gray-600">${AurumUI.escapeHtml(row.email)} will be ${next === "suspended" ? "blocked from signing in" : "allowed to sign in again"}.</p>`,
+          onConfirm: async () => {
+            const { error } = await sb.from("profiles").update({ status: next }).eq("id", row.id);
+            if (error) { AurumUI.toast(error.message, "error"); return false; }
+            return true;
+          },
+        });
+        if (!ok) return;
+        await AurumAuth.log(next === "suspended" ? "user.suspended" : "user.reactivated",
+          { resource_type: "profile", resource_id: row.id, metadata: { email: row.email } });
+        AurumUI.toast("Status updated", "success");
+        await load();
+      }
+
+      // -------- Reset password ----------------------------------------
+      async function resetPassword(row) {
+        const ok = await AurumUI.modal({
+          title: "Reset password?",
+          confirmLabel: "Send reset email",
+          bodyHtml: `<p class="text-sm text-gray-600">Supabase will email a magic reset link to <strong>${AurumUI.escapeHtml(row.email)}</strong>.</p>`,
+          onConfirm: async () => {
+            const redirectTo = `${location.origin}/settings.html?force_pw=1`;
+            const { error } = await sb.auth.resetPasswordForEmail(row.email, { redirectTo });
+            if (error) { AurumUI.toast(error.message, "error"); return false; }
+            return true;
+          },
+        });
+        if (!ok) return;
+        await AurumAuth.log("user.password_reset_sent",
+          { resource_type: "profile", resource_id: row.id, metadata: { email: row.email } });
+        AurumUI.toast("Reset email sent", "success");
+      }
+
+      // -------- Delete ------------------------------------------------
+      // Calls the delete-user edge function, which removes the auth
+      // user, profile row, and pending invitations in one shot (the
+      // client can't touch auth.users without the service-role key).
+      // Activity logging also happens server-side there.
+      async function deleteUser(row) {
+        const ok = await AurumUI.modal({
+          title: "Delete user permanently?",
+          confirmLabel: "Delete",
+          confirmClass: "bg-rose-600 text-white hover:bg-rose-700",
+          bodyHtml: `
+            <p class="text-sm text-gray-600">This permanently removes the user's profile, auth account, and any pending invitations. This cannot be undone.</p>
+            <p class="text-sm text-gray-900 mt-3">Type <strong>${AurumUI.escapeHtml(row.email)}</strong> to confirm:</p>
+            <input name="confirm" class="mt-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum"/>`,
+          onConfirm: async (wrap) => {
+            if (wrap.querySelector("[name=confirm]").value.trim() !== row.email) {
+              AurumUI.toast("Confirmation text does not match", "error");
+              return false;
+            }
+            const sess = await AurumAuth.currentSession();
+            if (!sess?.access_token) {
+              AurumUI.toast("Session expired — sign in again", "error");
+              return false;
+            }
+            const url = `${window.AURUM_CONFIG.SUPABASE_URL}${window.AURUM_CONFIG.DELETE_FUNCTION_PATH}`;
+            let resp, rawText = "", out = {};
+            try {
+              resp = await fetch(url, {
+                method: "POST",
+                headers: {
+                  "Content-Type":  "application/json",
+                  "Authorization": `Bearer ${sess.access_token}`,
+                  "apikey":        window.AURUM_CONFIG.SUPABASE_ANON_KEY,
+                },
+                body: JSON.stringify({ user_id: row.id }),
+              });
+              rawText = await resp.text();
+              try { out = rawText ? JSON.parse(rawText) : {}; } catch { /* non-JSON body */ }
+            } catch (netErr) {
+              console.error("delete-user network error", netErr);
+              AurumUI.toast(`Delete failed (network): ${netErr.message || netErr}`, "error");
+              return false;
+            }
+            if (!resp.ok) {
+              console.error("delete-user error", resp.status, rawText);
+              const detail = out.error || (rawText ? rawText.slice(0, 180) : resp.statusText);
+              AurumUI.toast(`Delete failed (${resp.status}): ${detail}`, "error");
+              return false;
+            }
+            return true;
+          },
+        });
+        if (!ok) return;
+        AurumUI.toast("User deleted", "success");
+        await load();
+      }
+    })();
+  </script>
+</body>
+</html>

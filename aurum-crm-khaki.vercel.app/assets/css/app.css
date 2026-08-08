@@ -1,0 +1,33 @@
+/* AURUM CRM — base styles (Tailwind CDN handles the rest) */
+:root {
+  --aurum-bg:      #FAFAFA;
+  --aurum-gold:    #D4AF37;
+  --aurum-ink:     #111827;
+  --aurum-muted:   #6B7280;
+  --aurum-line:    #E5E7EB;
+}
+
+html, body {
+  background: var(--aurum-bg);
+  color: var(--aurum-ink);
+  font-family: 'Inter', system-ui, -apple-system, Segoe UI, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; letter-spacing: -0.01em; }
+
+/* Sidebar layout helpers */
+.aurum-sidebar { display: flex; flex-direction: column; }
+
+/* Chart canvas needs an explicit sized parent in some browsers. */
+.chart-host { position: relative; height: 280px; }
+
+/* subtle fade-in for toasts / modals */
+@keyframes aurumFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.animate-fade-in { animation: aurumFadeIn 180ms ease-out both; }
+
+/* focus ring */
+.focus-aurum:focus { outline: 2px solid var(--aurum-gold); outline-offset: 2px; }
+
+/* Tailwind-style responsive tables on small screens */
+.aurum-table th, .aurum-table td { white-space: nowrap; }

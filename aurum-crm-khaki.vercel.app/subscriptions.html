@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Subscriptions · AURUM CRM</title>
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: {
+      colors: { 'aurum-bg':'#FAFAFA','aurum-gold':'#D4AF37','aurum-ink':'#111827' },
+      fontFamily: { display: ['"Plus Jakarta Sans"','Inter','sans-serif'], sans: ['Inter','sans-serif'] }
+    }}};
+  </script>
+  <link rel="stylesheet" href="assets/css/app.css" />
+</head>
+<body class="min-h-screen bg-aurum-bg text-aurum-ink">
+
+  <div class="flex min-h-screen">
+    <aside id="aurum-sidebar" class="aurum-sidebar w-64 shrink-0 bg-white border-r border-gray-100"></aside>
+
+    <main class="flex-1 min-w-0">
+      <div id="aurum-topbar"></div>
+
+      <div class="px-6 py-6 max-w-7xl mx-auto space-y-5">
+        <!-- Stat cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Total subscriptions</div>
+            <div class="font-display text-2xl font-semibold mt-1" data-stat="total">—</div>
+            <div class="text-xs text-gray-400 mt-1">Across all products</div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Active</div>
+            <div class="font-display text-2xl font-semibold mt-1 text-emerald-600" data-stat="active">—</div>
+            <div class="text-xs text-emerald-600 mt-1">Currently subscribed</div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Expired</div>
+            <div class="font-display text-2xl font-semibold mt-1 text-gray-500" data-stat="expired">—</div>
+            <div class="text-xs text-gray-400 mt-1">Lapsed subscriptions</div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Cancelled</div>
+            <div class="font-display text-2xl font-semibold mt-1 text-rose-600" data-stat="cancelled">—</div>
+            <div class="text-xs text-rose-600 mt-1">Ended by customer</div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Auto-renew on</div>
+            <div class="font-display text-2xl font-semibold mt-1 text-sky-600" data-stat="auto_renew">—</div>
+            <div class="text-xs text-sky-600 mt-1">Will renew automatically</div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-xl border border-gray-100 p-4 flex flex-wrap items-center gap-3">
+          <input id="f-search" type="search" placeholder="Search email or name…"
+            class="flex-1 min-w-[220px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum"/>
+          <select id="f-plan" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum">
+            <option value="">All plans</option>
+          </select>
+          <select id="f-status" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum">
+            <option value="">All statuses</option>
+            <option value="active">Active</option>
+            <option value="paused">Paused</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="pending">Pending</option>
+            <option value="expired">Expired</option>
+          </select>
+          <button id="btn-refresh"
+            class="ml-auto px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-700 hover:bg-gray-50">
+            Refresh
+          </button>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-white rounded-xl border border-gray-100 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="aurum-table min-w-full text-sm">
+              <thead class="bg-gray-50 text-gray-500 uppercase text-xs tracking-wide">
+                <tr>
+                  <th class="text-left font-medium px-5 py-3">Customer</th>
+                  <th class="text-left font-medium px-5 py-3">Plan</th>
+                  <th class="text-left font-medium px-5 py-3">Status</th>
+                  <th class="text-left font-medium px-5 py-3">Started</th>
+                  <th class="text-left font-medium px-5 py-3">Ends</th>
+                  <th class="text-left font-medium px-5 py-3">Auto-renew</th>
+                </tr>
+              </thead>
+              <tbody id="subs-body" class="divide-y divide-gray-100">
+                <tr><td colspan="6" class="px-5 py-8 text-center text-sm text-gray-400">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-3">
+            <span class="text-xs text-gray-500" id="subs-count"></span>
+            <div class="flex items-center gap-2" id="subs-pager"></div>
+          </div>
+        </div>
+
+        <p class="text-xs text-gray-400">
+          Auto-refreshes every 30s. Subscriptions data from aurum-customers;
+          customer identity from aurum-crm.
+        </p>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/supabase-client.js"></script>
+  <script src="assets/js/permissions.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script>
+    (async () => {
+      const ctx = await AurumAuth.guard({ permission: "subscriptions:view" });
+      AurumApp.boot(ctx);
+      AurumUI.setSubtitle("Real subscribers across all AURUM AI products");
+
+      const PAGE_SIZE = 50;
+      let allRows = [];   // current page from edge function
+      let total   = 0;
+      let page     = 1;
+      let plansLoaded = false;
+      let busy     = false;
+
+      const $body    = document.getElementById("subs-body");
+      const $count   = document.getElementById("subs-count");
+      const $pager   = document.getElementById("subs-pager");
+      const $search  = document.getElementById("f-search");
+      const $plan    = document.getElementById("f-plan");
+      const $status  = document.getElementById("f-status");
+      const $refresh = document.getElementById("btn-refresh");
+
+      $search.addEventListener("input",  () => render());
+      $plan.addEventListener("change",   () => { page = 1; load(); });
+      $status.addEventListener("change", () => { page = 1; load(); });
+      $refresh.addEventListener("click", () => load());
+
+      await load();
+      // Auto-refresh every 30s. setInterval keeps running across renders.
+      setInterval(() => { if (!busy) load({ silent: true }); }, 30_000);
+
+      function fnUrl() {
+        const base = (window.AURUM_CONFIG.SUPABASE_URL || "").replace(/\/+$/, "");
+        const path = window.AURUM_CONFIG.SUBS_FUNCTION_PATH || "/functions/v1/crm-subscriptions-list";
+        return base + path;
+      }
+
+      function skeleton() {
+        const cell = `<td class="px-5 py-3"><div class="h-3.5 rounded bg-gray-100 animate-pulse"></div></td>`;
+        return Array.from({ length: 6 }, () =>
+          `<tr>${cell.repeat(6)}</tr>`).join("");
+      }
+
+      async function load(opts = {}) {
+        if (busy) return;
+        busy = true;
+        if (!opts.silent) $body.innerHTML = skeleton();
+
+        let token;
+        try {
+          const sess = await AurumAuth.currentSession();
+          token = sess?.access_token;
+          if (!token) throw new Error("Session expired — sign in again.");
+        } catch (e) {
+          busy = false;
+          AurumUI.toast(e.message || "No session", "error");
+          return;
+        }
+
+        const params = new URLSearchParams();
+        params.set("page", page);
+        params.set("page_size", PAGE_SIZE);
+        if ($plan.value)   params.set("plan_id", $plan.value);
+        if ($status.value) params.set("status",  $status.value);
+
+        try {
+          const resp = await fetch(`${fnUrl()}?${params.toString()}`, {
+            method:  "GET",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "apikey":        window.AURUM_CONFIG.SUPABASE_ANON_KEY || "",
+            },
+          });
+          const txt = await resp.text();
+          let out = {}; try { out = txt ? JSON.parse(txt) : {}; } catch {}
+          if (!resp.ok || out.ok === false) {
+            throw new Error(out.detail || out.error || `HTTP ${resp.status}`);
+          }
+          allRows = Array.isArray(out.rows) ? out.rows : [];
+          total   = Number.isFinite(out.total) ? out.total : allRows.length;
+          populatePlans(out.plans);
+          updateStats(out.meta);
+          render();
+        } catch (e) {
+          // NO MOCK DATA — surface an honest empty/error state.
+          allRows = []; total = 0;
+          resetStats();
+          $body.innerHTML =
+            `<tr><td colspan="6" class="px-5 py-10 text-center text-sm text-rose-600">
+               Couldn't load subscriptions — ${AurumUI.escapeHtml(e.message || "unknown error")}
+             </td></tr>`;
+          $count.textContent = "";
+          $pager.innerHTML = "";
+          if (!opts.silent) AurumUI.toast(e.message || "Failed to load", "error");
+        } finally {
+          busy = false;
+        }
+      }
+
+      function populatePlans(plans) {
+        if (plansLoaded || !Array.isArray(plans)) return;
+        const keep = $plan.value;
+        const opts = plans.map(p => {
+          const cycle = p.billing_cycle ? ` · ${p.billing_cycle}` : "";
+          return `<option value="${AurumUI.escapeHtml(p.id)}">${AurumUI.escapeHtml(p.name || p.code || p.id)}${AurumUI.escapeHtml(cycle)}</option>`;
+        }).join("");
+        $plan.innerHTML = `<option value="">All plans</option>${opts}`;
+        if (keep) $plan.value = keep;
+        plansLoaded = true;
+      }
+
+      const STAT_KEYS = ["total", "active", "expired", "cancelled", "auto_renew"];
+      function setStat(key, val) {
+        const el = document.querySelector(`[data-stat="${key}"]`);
+        if (el) el.textContent = val;
+      }
+      function resetStats() { STAT_KEYS.forEach(k => setStat(k, "—")); }
+      function updateStats(meta) {
+        meta = meta || {};
+        setStat("total",      meta.total_subscriptions      ?? 0);
+        setStat("active",     meta.active_subscriptions     ?? 0);
+        setStat("expired",    meta.expired_subscriptions    ?? 0);
+        setStat("cancelled",  meta.cancelled_subscriptions  ?? 0);
+        setStat("auto_renew", meta.auto_renew_on            ?? 0);
+      }
+
+      function filteredRows() {
+        const q = $search.value.trim().toLowerCase();
+        if (!q) return allRows;
+        return allRows.filter(r => {
+          const c = r.customer || {};
+          const hay = [c.email, c.full_name, c.user_id]
+            .filter(v => v !== null && v !== undefined).join(" ").toLowerCase();
+          return hay.includes(q);
+        });
+      }
+
+      function render() {
+        const rows = filteredRows();
+        if (rows.length === 0) {
+          const msg = total === 0
+            ? "No subscriptions yet."
+            : "No subscriptions match these filters.";
+          $body.innerHTML = `<tr><td colspan="6" class="px-5 py-10 text-center text-sm text-gray-400">${msg}</td></tr>`;
+        } else {
+          $body.innerHTML = rows.map(r => {
+            const c       = r.customer || {};
+            const name    = c.full_name || (c.matched ? "—" : "Unknown customer");
+            const email   = c.email || `<span class="text-gray-400">no email on file</span>`;
+            const initial = (c.full_name || c.email || "?").slice(0, 1).toUpperCase();
+            return `
+              <tr>
+                <td class="px-5 py-3">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-aurum-gold/20 text-aurum-ink flex items-center justify-center font-semibold text-xs">${AurumUI.escapeHtml(initial)}</div>
+                    <div class="min-w-0">
+                      <div class="font-medium truncate">${AurumUI.escapeHtml(name)}</div>
+                      <div class="text-xs text-gray-500 truncate">${typeof email === "string" && !email.startsWith("<") ? AurumUI.escapeHtml(email) : email}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-5 py-3">${planCell(r.plan)}</td>
+                <td class="px-5 py-3">${statusBadge(r.status)}</td>
+                <td class="px-5 py-3 text-gray-600">${r.started_at ? AurumUI.fmtDate(r.started_at) : '<span class="text-gray-400">—</span>'}</td>
+                <td class="px-5 py-3">${endsCell(r)}</td>
+                <td class="px-5 py-3">${autoRenewBadge(r.auto_renew)}</td>
+              </tr>`;
+          }).join("");
+        }
+
+        const shown   = rows.length;
+        const pageEnd = Math.min((page - 1) * PAGE_SIZE + allRows.length, total);
+        const pageStart = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+        $count.textContent = `Showing ${shown} (page rows ${pageStart}–${pageEnd} of ${total})`;
+        renderPager();
+      }
+
+      function renderPager() {
+        const hasPrev = page > 1;
+        const hasNext = page * PAGE_SIZE < total;
+        if (!hasPrev && !hasNext) { $pager.innerHTML = ""; return; }
+        $pager.innerHTML = `
+          <button data-pg="prev" ${hasPrev ? "" : "disabled"}
+            class="px-2 py-1 rounded-md border border-gray-200 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-40">‹ Prev</button>
+          <button data-pg="next" ${hasNext ? "" : "disabled"}
+            class="px-2 py-1 rounded-md border border-gray-200 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-40">Next ›</button>`;
+        $pager.querySelectorAll("[data-pg]").forEach(b => b.addEventListener("click", e => {
+          if (e.currentTarget.dataset.pg === "prev" && hasPrev) { page -= 1; load(); }
+          if (e.currentTarget.dataset.pg === "next" && hasNext) { page += 1; load(); }
+        }));
+      }
+
+      function planCell(plan) {
+        if (!plan || !(plan.name || plan.code)) {
+          return `<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset bg-gray-100 text-gray-600 ring-gray-500/20">Unknown plan</span>`;
+        }
+        const parts = [];
+        if (plan.price_usd != null) parts.push(`$${plan.price_usd}`);
+        if (plan.billing_cycle)     parts.push(plan.billing_cycle);
+        const meta = parts.join(" · ");
+        return `
+          <div class="font-medium text-aurum-ink truncate">${AurumUI.escapeHtml(plan.name || plan.code)}</div>
+          <div class="text-xs text-gray-500 truncate">${meta ? AurumUI.escapeHtml(meta) : ""}</div>`;
+      }
+
+      function statusBadge(status) {
+        const s = (status || "").toLowerCase();
+        const cfg = {
+          active:    "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+          expired:   "bg-gray-100 text-gray-600 ring-gray-500/20",
+          cancelled: "bg-rose-50 text-rose-700 ring-rose-600/20",
+          paused:    "bg-amber-50 text-amber-700 ring-amber-600/20",
+          pending:   "bg-sky-50 text-sky-700 ring-sky-600/20",
+        };
+        const cls = cfg[s] || "bg-gray-50 text-gray-600 ring-gray-500/20";
+        return badge(status || "—", cls);
+      }
+
+      function endsCell(r) {
+        if (r.auto_renew) {
+          return `<span class="text-gray-400">—</span>`;
+        }
+        const exp = r.expires_at;
+        if (!exp) return `<span class="text-gray-400">—</span>`;
+        const days = Math.ceil((new Date(exp).getTime() - Date.now()) / 86_400_000);
+        if (days < 0) {
+          return badge(`Expired ${Math.abs(days)}d ago`, "bg-gray-100 text-gray-600 ring-gray-500/20");
+        }
+        if (days <= 7) {
+          return badge(`Ends in ${days}d`, "bg-amber-50 text-amber-700 ring-amber-600/20");
+        }
+        return `<span class="text-gray-600">${AurumUI.escapeHtml(AurumUI.fmtDate(exp))}</span>`;
+      }
+
+      function autoRenewBadge(on) {
+        return on
+          ? badge("ON",  "bg-emerald-50 text-emerald-700 ring-emerald-600/20")
+          : badge("OFF", "bg-gray-100 text-gray-600 ring-gray-500/20");
+      }
+
+      function badge(label, cls) {
+        return `<span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${cls}">${AurumUI.escapeHtml(label)}</span>`;
+      }
+    })();
+  </script>
+</body>
+</html>

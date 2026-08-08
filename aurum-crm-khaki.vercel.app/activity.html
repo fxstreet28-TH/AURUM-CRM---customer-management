@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Activity · AURUM CRM</title>
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: {
+      colors: { 'aurum-bg':'#FAFAFA','aurum-gold':'#D4AF37','aurum-ink':'#111827' },
+      fontFamily: { display: ['"Plus Jakarta Sans"','Inter','sans-serif'], sans: ['Inter','sans-serif'] }
+    }}};
+  </script>
+  <link rel="stylesheet" href="assets/css/app.css" />
+</head>
+<body class="min-h-screen bg-aurum-bg text-aurum-ink">
+  <div class="flex min-h-screen">
+    <aside id="aurum-sidebar" class="aurum-sidebar w-64 shrink-0 bg-white border-r border-gray-100"></aside>
+    <main class="flex-1 min-w-0">
+      <div id="aurum-topbar"></div>
+
+      <div class="px-6 py-6 max-w-7xl mx-auto space-y-5">
+        <!-- Filters -->
+        <div class="bg-white rounded-xl border border-gray-100 p-4 flex flex-wrap items-center gap-3">
+          <input id="f-search" type="search" placeholder="Search action, email, resource…"
+            class="flex-1 min-w-[220px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum"/>
+          <select id="f-action" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum">
+            <option value="">All actions</option>
+          </select>
+          <input id="f-from" type="date" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum"/>
+          <input id="f-to"   type="date" class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum"/>
+          <button id="btn-export" class="hidden bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm font-medium hover:bg-gray-50">
+            Export CSV
+          </button>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-100 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="aurum-table min-w-full text-sm">
+              <thead class="bg-gray-50 text-gray-500 uppercase text-xs tracking-wide">
+                <tr>
+                  <th class="text-left font-medium px-5 py-3">Time</th>
+                  <th class="text-left font-medium px-5 py-3">Actor</th>
+                  <th class="text-left font-medium px-5 py-3">Action</th>
+                  <th class="text-left font-medium px-5 py-3">Resource</th>
+                  <th class="text-left font-medium px-5 py-3">Metadata</th>
+                </tr>
+              </thead>
+              <tbody id="act-body" class="divide-y divide-gray-100"></tbody>
+            </table>
+          </div>
+          <div id="act-sentinel" class="px-5 py-4 text-center text-xs text-gray-400">Loading…</div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/supabase-client.js"></script>
+  <script src="assets/js/permissions.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script>
+    (async () => {
+      const ctx = await AurumAuth.guard({ permission: "activity:view" });
+      AurumApp.boot(ctx);
+      AurumUI.setSubtitle("Audit log of sensitive actions");
+
+      const canExport = AurumPerms.can(ctx.profile.role, "activity:export");
+      if (canExport) document.getElementById("btn-export").classList.remove("hidden");
+
+      const PAGE_SIZE = 30;
+      let offset = 0, loading = false, done = false;
+      const seenActions = new Set();
+
+      const els = {
+        body:     document.getElementById("act-body"),
+        sentinel: document.getElementById("act-sentinel"),
+        search:   document.getElementById("f-search"),
+        action:   document.getElementById("f-action"),
+        from:     document.getElementById("f-from"),
+        to:       document.getElementById("f-to"),
+        exportBtn:document.getElementById("btn-export"),
+      };
+
+      [els.search, els.action, els.from, els.to].forEach(el => el.addEventListener("input", reset));
+      els.exportBtn.addEventListener("click", exportCsv);
+
+      const io = new IntersectionObserver(entries => {
+        for (const e of entries) if (e.isIntersecting) loadMore();
+      }, { rootMargin: "200px" });
+      io.observe(els.sentinel);
+
+      async function reset() {
+        offset = 0; done = false;
+        els.body.innerHTML = "";
+        els.sentinel.textContent = "Loading…";
+        await loadMore();
+      }
+
+      async function loadMore() {
+        if (loading || done) return;
+        loading = true;
+        const q = buildQuery().range(offset, offset + PAGE_SIZE - 1);
+        const { data, error } = await q;
+        loading = false;
+        if (error) { els.sentinel.textContent = error.message; return; }
+        if (!data || data.length === 0) {
+          done = true;
+          els.sentinel.textContent = offset === 0 ? "No activity matches these filters." : "End of log.";
+          return;
+        }
+        for (const r of data) {
+          if (r.action && !seenActions.has(r.action)) {
+            seenActions.add(r.action);
+            const opt = document.createElement("option");
+            opt.value = r.action; opt.textContent = r.action;
+            els.action.appendChild(opt);
+          }
+        }
+        appendRows(data);
+        offset += data.length;
+        if (data.length < PAGE_SIZE) { done = true; els.sentinel.textContent = "End of log."; }
+        else els.sentinel.textContent = "Loading more…";
+      }
+
+      function buildQuery() {
+        let q = sb.from("activity_logs")
+          .select("id, created_at, actor_id, actor_email, action, resource_type, resource_id, metadata, ip, ua")
+          .order("created_at", { ascending: false });
+        const search = els.search.value.trim();
+        if (search) {
+          const esc = search.replace(/[%,]/g, "\\$&");
+          q = q.or(`action.ilike.%${esc}%,actor_email.ilike.%${esc}%,resource_id.ilike.%${esc}%,resource_type.ilike.%${esc}%`);
+        }
+        if (els.action.value) q = q.eq("action", els.action.value);
+        if (els.from.value)   q = q.gte("created_at", new Date(els.from.value).toISOString());
+        if (els.to.value) {
+          const to = new Date(els.to.value); to.setDate(to.getDate() + 1);
+          q = q.lt("created_at", to.toISOString());
+        }
+        return q;
+      }
+
+      function appendRows(rows) {
+        const html = rows.map(r => `
+          <tr>
+            <td class="px-5 py-3 text-gray-600 whitespace-nowrap">${AurumUI.fmtDate(r.created_at)}</td>
+            <td class="px-5 py-3">${AurumUI.escapeHtml(r.actor_email || "—")}</td>
+            <td class="px-5 py-3"><span class="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">${AurumUI.escapeHtml(r.action)}</span></td>
+            <td class="px-5 py-3 text-gray-600">${AurumUI.escapeHtml(r.resource_type || "—")}${r.resource_id ? ` · <span class="text-xs text-gray-400">${AurumUI.escapeHtml(String(r.resource_id).slice(0,8))}</span>` : ""}</td>
+            <td class="px-5 py-3"><code class="text-xs text-gray-500 line-clamp-1">${AurumUI.escapeHtml(JSON.stringify(r.metadata || {}))}</code></td>
+          </tr>`).join("");
+        els.body.insertAdjacentHTML("beforeend", html);
+      }
+
+      async function exportCsv() {
+        els.exportBtn.disabled = true;
+        const prev = els.exportBtn.textContent;
+        els.exportBtn.textContent = "Preparing…";
+        try {
+          // Pull up to 5k matching rows using current filters.
+          const { data, error } = await buildQuery().range(0, 4999);
+          if (error) { AurumUI.toast(error.message, "error"); return; }
+          const header = ["created_at","actor_email","action","resource_type","resource_id","metadata","ip","ua"];
+          const esc = v => `"${String(v ?? "").replace(/"/g,'""')}"`;
+          const lines = [header.join(",")];
+          for (const r of data) {
+            lines.push([
+              r.created_at, r.actor_email, r.action, r.resource_type, r.resource_id,
+              JSON.stringify(r.metadata || {}), r.ip, r.ua,
+            ].map(esc).join(","));
+          }
+          const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+          const url  = URL.createObjectURL(blob);
+          const a    = document.createElement("a");
+          a.href     = url;
+          a.download = `aurum-activity-${new Date().toISOString().slice(0,10)}.csv`;
+          a.click();
+          URL.revokeObjectURL(url);
+          await AurumAuth.log("activity.exported", { metadata: { rows: data.length } });
+          AurumUI.toast(`Exported ${data.length} rows`, "success");
+        } finally {
+          els.exportBtn.disabled = false;
+          els.exportBtn.textContent = prev;
+        }
+      }
+
+      await loadMore();
+    })();
+  </script>
+</body>
+</html>

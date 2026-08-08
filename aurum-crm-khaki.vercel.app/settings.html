@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Settings · AURUM CRM</title>
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: {
+      colors: { 'aurum-bg':'#FAFAFA','aurum-gold':'#D4AF37','aurum-ink':'#111827' },
+      fontFamily: { display: ['"Plus Jakarta Sans"','Inter','sans-serif'], sans: ['Inter','sans-serif'] }
+    }}};
+  </script>
+  <link rel="stylesheet" href="assets/css/app.css" />
+</head>
+<body class="min-h-screen bg-aurum-bg text-aurum-ink">
+  <div class="flex min-h-screen">
+    <aside id="aurum-sidebar" class="aurum-sidebar w-64 shrink-0 bg-white border-r border-gray-100"></aside>
+    <main class="flex-1 min-w-0">
+      <div id="aurum-topbar"></div>
+
+      <div class="px-6 py-6 max-w-3xl mx-auto space-y-5">
+        <div id="force-banner" class="hidden rounded-xl border border-amber-200 bg-amber-50 text-amber-900 px-4 py-3 text-sm">
+          <strong>Action required:</strong> set a new password before continuing.
+        </div>
+
+        <!-- Profile -->
+        <section class="bg-white rounded-xl border border-gray-100">
+          <div class="px-5 py-4 border-b border-gray-100">
+            <h2 class="font-display font-semibold">Profile</h2>
+            <p class="text-xs text-gray-500 mt-0.5">Your account details.</p>
+          </div>
+          <form id="profile-form" class="px-5 py-5 space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Full name</label>
+                <input name="full_name" type="text" class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum"/>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Email</label>
+                <input name="email" type="email" disabled class="w-full rounded-lg border border-gray-200 bg-gray-50 text-gray-500 px-3 py-2 text-sm"/>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Role</label>
+                <input name="role" type="text" disabled class="w-full rounded-lg border border-gray-200 bg-gray-50 text-gray-500 px-3 py-2 text-sm"/>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Status</label>
+                <input name="status" type="text" disabled class="w-full rounded-lg border border-gray-200 bg-gray-50 text-gray-500 px-3 py-2 text-sm"/>
+              </div>
+            </div>
+            <div class="flex justify-end">
+              <button type="submit" class="bg-aurum-gold text-aurum-ink font-semibold rounded-lg px-4 py-2 text-sm hover:brightness-95">Save profile</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- Password -->
+        <section class="bg-white rounded-xl border border-gray-100">
+          <div class="px-5 py-4 border-b border-gray-100">
+            <h2 class="font-display font-semibold">Change password</h2>
+            <p class="text-xs text-gray-500 mt-0.5">Use at least 10 characters with a mix of letters, numbers, and symbols.</p>
+          </div>
+          <form id="pw-form" class="px-5 py-5 space-y-4">
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1">New password</label>
+              <input name="new_pw" type="password" minlength="10" required class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum"/>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1">Confirm password</label>
+              <input name="new_pw2" type="password" minlength="10" required class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum"/>
+            </div>
+            <div class="flex justify-end">
+              <button type="submit" class="bg-aurum-gold text-aurum-ink font-semibold rounded-lg px-4 py-2 text-sm hover:brightness-95">Update password</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- Signup Approval Mode (owner only) -->
+        <section id="signup-approval-section" class="hidden bg-white rounded-xl border border-gray-100">
+          <div class="px-5 py-4 border-b border-gray-100">
+            <h2 class="font-display font-semibold">Signup Approval Mode</h2>
+            <p class="text-xs text-gray-500 mt-0.5">ควบคุมว่าจะให้ลูกค้าที่สมัครใหม่ได้ใช้งานทันทีหรือรอ admin approve</p>
+          </div>
+          <div class="px-5 py-5">
+            <div id="sam-loading" class="text-sm text-gray-400">Loading…</div>
+
+            <div id="sam-body" class="hidden space-y-3">
+              <label class="flex items-start gap-3 rounded-lg border border-gray-200 p-3 cursor-pointer hover:border-gray-300 has-[:checked]:border-aurum-gold has-[:checked]:bg-amber-50/40">
+                <input type="radio" name="sam-mode" value="manual" class="mt-1 accent-aurum-gold" />
+                <span class="min-w-0">
+                  <span class="flex items-center gap-2">
+                    <span class="text-sm font-semibold">Manual Approval</span>
+                    <span class="text-[10px] uppercase tracking-wide rounded-full bg-gray-100 text-gray-600 px-2 py-0.5">Default</span>
+                  </span>
+                  <span class="block text-xs text-gray-500 mt-0.5">Admin ต้อง approve ทุก signup ก่อนใช้งาน (นโยบายปัจจุบัน)</span>
+                </span>
+              </label>
+
+              <label class="flex items-start gap-3 rounded-lg border border-gray-200 p-3 cursor-pointer hover:border-gray-300 has-[:checked]:border-aurum-gold has-[:checked]:bg-amber-50/40">
+                <input type="radio" name="sam-mode" value="auto" class="mt-1 accent-aurum-gold" />
+                <span class="min-w-0">
+                  <span class="flex items-center gap-2">
+                    <span class="text-sm font-semibold">Auto Approval</span>
+                    <span id="sam-auto-badge" class="hidden text-[10px] uppercase tracking-wide rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5">Active</span>
+                  </span>
+                  <span class="block text-xs text-gray-500 mt-0.5">ลูกค้าใช้งานได้ทันทีหลังจ่ายเงิน (ยัง require verify email + phone + payment)</span>
+                </span>
+              </label>
+
+              <div class="rounded-lg bg-blue-50 border border-blue-200 p-3">
+                <div class="text-xs font-semibold text-blue-900 mb-1.5">Auto approval requirements (บังคับ, แก้ไม่ได้):</div>
+                <ul class="text-xs text-blue-800 space-y-1">
+                  <li>✓ Email verified (OTP)</li>
+                  <li>✓ Phone verified (SMS OTP)</li>
+                  <li>✓ Payment method attached + active subscription</li>
+                </ul>
+                <div class="text-[11px] text-blue-700 mt-2">ถ้าลูกค้าไม่ผ่านเงื่อนไขใดข้อหนึ่ง จะ fall back เป็น manual queue เสมอ</div>
+              </div>
+
+              <div class="flex items-center justify-between pt-1">
+                <a href="activity.html" class="text-xs text-gray-500 hover:text-gray-700">ดู audit log →</a>
+                <button id="sam-save" disabled class="bg-aurum-gold text-aurum-ink font-semibold rounded-lg px-4 py-2 text-sm hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed">Save</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/supabase-client.js"></script>
+  <script src="assets/js/permissions.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script>
+    (async () => {
+      const ctx = await AurumAuth.guard({ permission: "settings:view" });
+      AurumApp.boot(ctx);
+      AurumUI.setSubtitle("Profile and security");
+
+      // Force-password banner
+      const forcePw = new URLSearchParams(location.search).get("force_pw") === "1" || ctx.profile.must_change_pw;
+      if (forcePw) document.getElementById("force-banner").classList.remove("hidden");
+
+      // Fill profile form
+      const pf = document.getElementById("profile-form");
+      pf.full_name.value = ctx.profile.full_name || "";
+      pf.email.value     = ctx.profile.email;
+      pf.role.value      = AurumPerms.ROLE_LABELS[ctx.profile.role] || ctx.profile.role;
+      pf.status.value    = ctx.profile.status;
+
+      pf.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const full_name = pf.full_name.value.trim();
+        const { error } = await sb.from("profiles").update({ full_name }).eq("id", ctx.profile.id);
+        if (error) { AurumUI.toast(error.message, "error"); return; }
+        await AurumAuth.log("settings.profile_updated");
+        AurumUI.toast("Profile saved", "success");
+      });
+
+      // Password form
+      const pw = document.getElementById("pw-form");
+      pw.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const a = pw.new_pw.value, b = pw.new_pw2.value;
+        if (a !== b)         { AurumUI.toast("Passwords do not match", "error"); return; }
+        if (a.length < 10)   { AurumUI.toast("Password must be ≥ 10 characters", "error"); return; }
+        try {
+          await AurumAuth.changePassword(a);
+          AurumUI.toast("Password updated", "success");
+          pw.reset();
+          document.getElementById("force-banner").classList.add("hidden");
+          // Clean up force_pw query param.
+          if (new URLSearchParams(location.search).get("force_pw") === "1") {
+            history.replaceState(null, "", "settings.html");
+            setTimeout(() => location.replace("dashboard.html"), 800);
+          }
+        } catch (err) {
+          AurumUI.toast(err.message || "Failed to update password", "error");
+        }
+      });
+
+      // ---- Signup Approval Mode (owner only) -----------------------
+      if (ctx.profile.role === "owner") {
+        setupSignupApprovalMode();
+      }
+
+      function samFnUrl() {
+        const base = (window.AURUM_CONFIG.SUPABASE_URL || "").replace(/\/+$/, "");
+        const path = window.AURUM_CONFIG.SIGNUP_MODE_FUNCTION_PATH || "/functions/v1/crm-signup-approval-mode";
+        return `${base}${path}`;
+      }
+
+      async function samHeaders() {
+        const { data } = await sb.auth.getSession();
+        const token = data?.session?.access_token;
+        if (!token) throw new Error("Session expired — sign in again.");
+        return { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" };
+      }
+
+      async function setupSignupApprovalMode() {
+        const section = document.getElementById("signup-approval-section");
+        const loading = document.getElementById("sam-loading");
+        const bodyEl  = document.getElementById("sam-body");
+        const saveBtn = document.getElementById("sam-save");
+        const autoBadge = document.getElementById("sam-auto-badge");
+        section.classList.remove("hidden");
+
+        let savedMode = "manual";
+
+        const radios = () => Array.from(document.querySelectorAll('input[name="sam-mode"]'));
+        const selected = () => (radios().find(r => r.checked) || {}).value;
+
+        function applyMode(mode) {
+          radios().forEach(r => { r.checked = (r.value === mode); });
+          syncUI();
+        }
+        function syncUI() {
+          const cur = selected();
+          saveBtn.disabled = (cur === savedMode);
+          autoBadge.classList.toggle("hidden", savedMode !== "auto");
+        }
+
+        radios().forEach(r => r.addEventListener("change", syncUI));
+
+        // Load current config.
+        try {
+          const resp = await fetch(samFnUrl(), { method: "GET", headers: await samHeaders() });
+          const out = await resp.json().catch(() => ({}));
+          if (!resp.ok || out.ok === false) {
+            throw new Error(out.error || `HTTP ${resp.status}`);
+          }
+          savedMode = (out.config && out.config.mode === "auto") ? "auto" : "manual";
+          applyMode(savedMode);
+          loading.classList.add("hidden");
+          bodyEl.classList.remove("hidden");
+        } catch (err) {
+          loading.textContent = err.message || "Failed to load signup mode";
+          loading.classList.remove("text-gray-400");
+          loading.classList.add("text-red-600");
+          return;
+        }
+
+        saveBtn.addEventListener("click", async () => {
+          const next = selected();
+          if (!next || next === savedMode) return;
+          saveBtn.disabled = true;
+          const original = saveBtn.textContent;
+          saveBtn.textContent = "Saving…";
+          try {
+            const resp = await fetch(samFnUrl(), {
+              method: "POST",
+              headers: await samHeaders(),
+              body: JSON.stringify({ mode: next }),
+            });
+            const out = await resp.json().catch(() => ({}));
+            if (!resp.ok || out.ok === false) {
+              throw new Error(out.error || `HTTP ${resp.status}`);
+            }
+            savedMode = (out.config && out.config.mode === "auto") ? "auto" : "manual";
+            applyMode(savedMode);
+            AurumUI.toast(`Signup mode set to ${savedMode}`, "success");
+          } catch (err) {
+            AurumUI.toast(err.message || "Failed to save", "error");
+            syncUI();
+          } finally {
+            saveBtn.textContent = original;
+          }
+        });
+      }
+    })();
+  </script>
+</body>
+</html>
