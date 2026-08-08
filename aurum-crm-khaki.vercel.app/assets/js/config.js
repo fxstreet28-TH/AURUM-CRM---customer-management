@@ -8,10 +8,9 @@
 // For local development you can either edit this file or host it on
 // Vercel as an environment-driven config (see README → Vercel).
 // ====================================================================
-
 window.AURUM_CONFIG = {
-  SUPABASE_URL:     "https://jdelizsmiwpushoeafen.supabase.co",
-  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkZWxpenNtaXdwdXNob2VhZmVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5MjcwNjYsImV4cCI6MjA5MjUwMzA2Nn0.JEZuqZgqdou5YD7zWbV65O7IJrbM9dy79KgP3kpK97c",
+  SUPABASE_URL:     "https://hknvooaqgpufrbdxtzxf.supabase.co",
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhrbnZvb2FxZ3B1ZnJiZHh0enhmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwMTI1MDcsImV4cCI6MjEwMTU4ODUwN30.Zom2N7qaijBshZyHvhZ6vXGPR5jx3sDGk_PMJXWR71g",
   INVITE_FUNCTION_PATH: "/functions/v1/invite-user",
   DELETE_FUNCTION_PATH: "/functions/v1/delete-user",
   MT5_FUNCTION_PATH:    "/functions/v1/admin-mt5-connections",
