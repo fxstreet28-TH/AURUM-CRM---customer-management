@@ -1,8 +1,8 @@
 /* AURUM CRM — base styles (Tailwind CDN handles the rest) */
 :root {
-  --aurum-bg:      #FAFAFA;
-  --aurum-gold:    #D4AF37;
-  --aurum-ink:     #111827;
+  --aurum-bg:      #F4F6FA;
+  --aurum-gold:    #D6B54A;
+  --aurum-ink:     #10131A;
   --aurum-muted:   #6B7280;
   --aurum-line:    #E5E7EB;
 }
@@ -14,10 +14,34 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
+.admin-login {
+  background: radial-gradient(circle at 20% 15%, rgba(214,181,74,.16), transparent 28rem), radial-gradient(circle at 85% 80%, rgba(214,181,74,.08), transparent 24rem), linear-gradient(145deg, #080a0f, #171b24 58%, #0b0d12);
+}
+.admin-hero {
+  background: radial-gradient(circle at 88% 12%, rgba(214,181,74,.28), transparent 18rem), linear-gradient(125deg, #0b0d12, #1a1f2a 65%, #27200d);
+  box-shadow: 0 18px 45px rgba(16,19,26,.18);
+}
+.admin-action-card { display:flex;align-items:center;gap:.75rem;min-width:0;padding:.9rem;border-radius:.85rem;border:1px solid #e7e9ee;background:#fff;transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease; }
+.admin-action-card:hover { transform:translateY(-1px);border-color:rgba(214,181,74,.7);box-shadow:0 10px 25px rgba(16,19,26,.08); }
+.admin-action-icon { display:grid;place-items:center;flex:0 0 auto;width:2.15rem;height:2.15rem;border-radius:.65rem;background:#10131a;color:#e3c65d;font-weight:800; }
+.admin-action-card strong,.admin-action-card small { display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.admin-action-card strong { color:#171a21;font-size:.82rem; }
+.admin-action-card small { color:#7b8190;font-size:.68rem;margin-top:.1rem; }
+
 .font-display { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; letter-spacing: -0.01em; }
 
 /* Sidebar layout helpers */
-.aurum-sidebar { display: flex; flex-direction: column; }
+.aurum-sidebar { display:flex; flex-direction:column; background:linear-gradient(180deg,#11141b 0%,#090b10 100%)!important; border-color:#20242d!important; box-shadow:12px 0 40px rgba(10,12,18,.06); min-height:100vh; position:sticky; top:0; height:100vh; overflow-y:auto; }
+.brand-mark { width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,#f2dc83,#b58b14);color:#111;display:flex;align-items:center;justify-content:center;font-family:'Plus Jakarta Sans';font-weight:900;box-shadow:0 8px 24px rgba(214,181,74,.18); }
+.nav-active { background:linear-gradient(90deg,rgba(214,181,74,.18),rgba(214,181,74,.06));color:#f7df7c;border:1px solid rgba(214,181,74,.18);box-shadow:inset 3px 0 #d6b54a; }
+.nav-idle { color:#9ca3af; border:1px solid transparent; }
+.nav-idle:hover { color:white;background:rgba(255,255,255,.05); }
+.admin-pill {font-size:9px;letter-spacing:.16em;font-weight:800;color:#7a5d08;background:#fff7d6;border:1px solid #f0dc8a;border-radius:999px;padding:3px 7px;}
+.system-chip {display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:600;color:#166534;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:999px;padding:7px 10px;}
+.status-dot {width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.12);}
+main { background:radial-gradient(circle at 100% 0,rgba(214,181,74,.07),transparent 28%),var(--aurum-bg); }
+main .bg-white { box-shadow:0 8px 28px rgba(17,24,39,.035); }
+main .rounded-xl { border-radius:16px; }
 
 /* Chart canvas needs an explicit sized parent in some browsers. */
 .chart-host { position: relative; height: 280px; }
@@ -31,3 +55,4 @@ html, body {
 
 /* Tailwind-style responsive tables on small screens */
 .aurum-table th, .aurum-table td { white-space: nowrap; }
+@media(max-width:900px){.aurum-sidebar{width:220px!important}.system-chip{display:none}}

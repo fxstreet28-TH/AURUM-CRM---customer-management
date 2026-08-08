@@ -26,6 +26,27 @@
       <div id="aurum-topbar"></div>
 
       <div class="px-6 py-6 max-w-7xl mx-auto space-y-6">
+        <section class="admin-hero rounded-2xl p-6 md:p-8 text-white overflow-hidden relative">
+          <div class="relative z-10 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+            <div>
+              <div class="text-xs font-semibold uppercase tracking-[0.22em] text-amber-300">AURUM Admin Command Center</div>
+              <h1 class="font-display text-2xl md:text-3xl font-bold mt-2">Control customers, credit and access from one place.</h1>
+              <p class="text-sm text-gray-300 mt-2 max-w-2xl">A private operations workspace for administrators. Review account health, manage customer records and audit important changes.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <a href="customers.html" class="rounded-lg bg-aurum-gold px-4 py-2.5 text-sm font-semibold text-aurum-ink hover:brightness-105">Manage customers</a>
+              <a href="system-health.html" class="rounded-lg border border-white/20 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/15">System health</a>
+            </div>
+          </div>
+        </section>
+
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <a href="add-credit.html" class="admin-action-card"><span class="admin-action-icon">+</span><span><strong>Add credit</strong><small>Approve a balance increase</small></span></a>
+          <a href="remove-credit.html" class="admin-action-card"><span class="admin-action-icon">−</span><span><strong>Remove credit</strong><small>Apply an authorized deduction</small></span></a>
+          <a href="users.html" class="admin-action-card"><span class="admin-action-icon">U</span><span><strong>Admin users</strong><small>Roles and account status</small></span></a>
+          <a href="activity.html" class="admin-action-card"><span class="admin-action-icon">A</span><span><strong>Audit activity</strong><small>Review system actions</small></span></a>
+        </div>
+
         <!-- Stat cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <div class="bg-white rounded-xl border border-gray-100 p-5">
@@ -110,7 +131,7 @@
     (async () => {
       const ctx = await AurumAuth.guard({ permission: "dashboard:view" });
       AurumApp.boot(ctx);
-      AurumUI.setSubtitle("Overview of AURUM AI user accounts");
+      AurumUI.setSubtitle("Administrator operations overview");
 
       // ---- Stats -----------------------------------------------------
       const { data: profiles, error } = await sb

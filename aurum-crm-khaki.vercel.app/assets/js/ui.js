@@ -12,6 +12,7 @@
     { href: "add-credit.html",    label: "Add Credit",    emailGate: true,          icon: iconAddCredit },
     { href: "remove-credit.html", label: "Remove Credit", emailGate: true,          icon: iconRemoveCredit },
     { href: "credit-log.html",    label: "Credit Log",    emailGate: true,          icon: iconCreditLog },
+    { href: "system-health.html", label: "System Health", perm: "settings:view",    icon: iconHealth },
     { href: "permissions.html", label: "Permissions", perm: "permissions:view", icon: iconShield },
     { href: "activity.html",    label: "Activity",    perm: "activity:view",    icon: iconActivity },
     { href: "settings.html",    label: "Settings",    perm: "settings:view",    icon: iconSettings },
@@ -34,45 +35,50 @@
       <a href="${n.href}"
          class="group flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition
                 ${active === n.href
-                  ? "bg-aurum-gold/10 text-aurum-ink"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-aurum-ink"}">
+                  ? "nav-active"
+                  : "nav-idle"}">
         <span class="w-5 h-5 ${active === n.href ? "text-aurum-gold" : "text-gray-400 group-hover:text-aurum-gold"}">${n.icon()}</span>
         ${n.label}
       </a>`).join("");
 
     const sidebar = document.getElementById("aurum-sidebar");
     if (sidebar) sidebar.innerHTML = `
-      <div class="h-16 flex items-center px-6 border-b border-gray-100">
-        <span class="font-display text-lg font-bold tracking-tight">
-          <span class="text-aurum-gold">AURUM</span> CRM
-        </span>
+      <div class="h-20 flex items-center px-5 border-b border-white/10">
+        <div class="brand-mark">A</div>
+        <div class="ml-3">
+          <div class="font-display text-base font-extrabold tracking-[.12em] text-white"><span class="text-aurum-gold">AURUM</span> CRM</div>
+          <div class="text-[10px] uppercase tracking-[.22em] text-gray-500">Admin Console</div>
+        </div>
       </div>
-      <nav class="p-3 space-y-1">${items}</nav>
-      <div class="mt-auto p-3 border-t border-gray-100">
+      <div class="px-5 pt-5 pb-2 text-[10px] font-semibold uppercase tracking-[.2em] text-gray-600">Management</div>
+      <nav class="px-3 pb-4 space-y-1">${items}</nav>
+      <div class="mt-auto p-3 border-t border-white/10">
         <div class="flex items-center gap-3 px-2 py-2">
-          <div class="w-9 h-9 rounded-full bg-aurum-gold/20 text-aurum-ink flex items-center justify-center font-semibold">
+          <div class="w-9 h-9 rounded-xl bg-aurum-gold text-black flex items-center justify-center font-bold shadow-lg shadow-yellow-500/10">
             ${escapeHtml((profile.full_name || profile.email).slice(0,1).toUpperCase())}
           </div>
           <div class="min-w-0">
-            <div class="text-sm font-medium text-aurum-ink truncate">${escapeHtml(profile.full_name || profile.email)}</div>
+            <div class="text-sm font-medium text-white truncate">${escapeHtml(profile.full_name || profile.email)}</div>
             <div class="text-xs text-gray-500 truncate">${escapeHtml(AurumPerms.ROLE_LABELS[profile.role] || profile.role)}</div>
           </div>
         </div>
         <button id="aurum-signout"
-          class="mt-2 w-full text-sm text-gray-600 hover:text-aurum-ink hover:bg-gray-100 rounded-lg px-3 py-2 text-left">
+          class="mt-2 w-full text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg px-3 py-2 text-left">
           Sign out
         </button>
       </div>`;
 
     const topbar = document.getElementById("aurum-topbar");
     if (topbar) topbar.innerHTML = `
-      <div class="h-16 flex items-center justify-between px-6 border-b border-gray-100 bg-white">
+      <div class="h-20 flex items-center justify-between px-6 border-b border-gray-200 bg-white/95 backdrop-blur">
         <div>
-          <h1 class="font-display text-xl font-semibold text-aurum-ink">${escapeHtml(document.title.replace(/\s*[·—].*$/,""))}</h1>
+          <div class="flex items-center gap-2"><span class="admin-pill">ADMIN</span><span class="text-[11px] text-gray-400">AURUM CONTROL CENTER</span></div>
+          <h1 class="font-display text-xl font-bold text-aurum-ink mt-0.5">${escapeHtml(document.title.replace(/\s*[·—].*$/,""))}</h1>
           <p class="text-xs text-gray-500" data-aurum-subtitle></p>
         </div>
         <div class="flex items-center gap-2">
-          <span class="hidden md:inline text-xs text-gray-500">${escapeHtml(profile.email)}</span>
+          <a href="system-health.html" class="system-chip"><span class="status-dot"></span> System online</a>
+          <span class="hidden lg:inline text-xs text-gray-500 border-l pl-3">${escapeHtml(profile.email)}</span>
         </div>
       </div>`;
 
@@ -185,6 +191,7 @@
   function iconCreditLog() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5"><path d="M5 3h11l3 3v15a0 0 0 010 0H5a0 0 0 010 0V3z" stroke-linejoin="round"/><path d="M9 9h6M9 13h6M9 17h4" stroke-linecap="round"/></svg>`; }
   function iconMt5()       { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5"><path d="M3 17l5-5 3 3 4-6 6 8" stroke-linejoin="round" stroke-linecap="round"/><circle cx="8" cy="12" r="1.4" fill="currentColor"/><circle cx="11" cy="15" r="1.4" fill="currentColor"/><circle cx="15" cy="9" r="1.4" fill="currentColor"/></svg>`; }
   function iconSubscriptions() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18" stroke-linecap="round"/><path d="M16.5 14.5a2 2 0 11-1.4-3.4M16.5 11v3.5" stroke-linejoin="round" stroke-linecap="round"/></svg>`; }
+  function iconHealth() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5"><path d="M3 12h4l2.2-5 3.4 10 2.2-5H21" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 22C6.5 19.1 3 15.8 3 10.8A5 5 0 0112 7a5 5 0 019 3.8c0 5-3.5 8.3-9 11.2z" opacity=".35"/></svg>`; }
 
   window.AurumUI = { renderShell, setSubtitle, toast, modal, escapeHtml, fmtDate, fmtRelative, statusBadge, roleBadge };
 

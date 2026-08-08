@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>System Health · AURUM CRM</title>
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{'aurum-bg':'#F4F6FA','aurum-gold':'#D6B54A','aurum-ink':'#10131A'},fontFamily:{display:['Plus Jakarta Sans','Inter','sans-serif'],sans:['Inter','sans-serif']}}}};</script>
+  <link rel="stylesheet" href="assets/css/app.css" />
+</head>
+<body class="min-h-screen bg-aurum-bg text-aurum-ink">
+  <div class="flex min-h-screen">
+    <aside id="aurum-sidebar" class="aurum-sidebar w-64 shrink-0"></aside>
+    <main class="flex-1 min-w-0">
+      <div id="aurum-topbar"></div>
+      <div class="px-6 py-6 max-w-7xl mx-auto space-y-6">
+        <section class="rounded-2xl bg-gradient-to-br from-[#151922] to-[#090b10] text-white p-6 overflow-hidden relative">
+          <div class="absolute -right-12 -top-12 w-56 h-56 rounded-full bg-aurum-gold/10 blur-2xl"></div>
+          <div class="relative flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div><div class="text-xs uppercase tracking-[.2em] text-aurum-gold">Live Operations</div><h2 class="font-display text-2xl font-bold mt-2">System Control Center</h2><p class="text-sm text-gray-400 mt-2">ตรวจสอบบริการหลักและฐานข้อมูลที่ Admin ใช้งาน</p></div>
+            <button id="run-checks" class="px-5 py-3 rounded-xl bg-aurum-gold text-black font-bold text-sm hover:brightness-105">Run health checks</button>
+          </div>
+        </section>
+        <div id="health-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4"></div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <section class="lg:col-span-2 bg-white border border-gray-100 rounded-2xl overflow-hidden">
+            <div class="px-5 py-4 border-b"><h3 class="font-display font-bold">Operational checklist</h3></div>
+            <div class="divide-y text-sm" id="checklist"></div>
+          </section>
+          <section class="bg-white border border-gray-100 rounded-2xl p-5">
+            <h3 class="font-display font-bold">Admin quick actions</h3>
+            <div class="mt-4 grid gap-2">
+              <a href="customers.html" class="p-3 rounded-xl bg-gray-50 hover:bg-amber-50 font-medium">Review customers →</a>
+              <a href="users.html" class="p-3 rounded-xl bg-gray-50 hover:bg-amber-50 font-medium">Manage admin users →</a>
+              <a href="activity.html" class="p-3 rounded-xl bg-gray-50 hover:bg-amber-50 font-medium">Open audit activity →</a>
+              <a href="settings.html" class="p-3 rounded-xl bg-gray-50 hover:bg-amber-50 font-medium">System settings →</a>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <script src="assets/js/config.js"></script><script src="assets/js/supabase-client.js"></script><script src="assets/js/permissions.js"></script><script src="assets/js/auth.js"></script><script src="assets/js/ui.js"></script>
+  <script>
+  (async()=>{
+    const ctx=await AurumAuth.guard({permission:'settings:view'});AurumApp.boot(ctx);AurumUI.setSubtitle('Database, access and service availability');
+    const grid=document.getElementById('health-grid'), list=document.getElementById('checklist');
+    const checks=[
+      {name:'Authentication',detail:'Supabase session active',run:async()=>!!(await sb.auth.getSession()).data.session},
+      {name:'Admin profiles',detail:'profiles table reachable',run:async()=>!(await sb.from('profiles').select('id',{head:true,count:'exact'})).error},
+      {name:'Customer CRM',detail:'customer_profiles reachable',run:async()=>!(await sb.from('customer_profiles').select('id',{head:true,count:'exact'})).error},
+      {name:'MT5 service',detail:'connections data reachable',run:async()=>!(await sb.from('mt5_connections').select('id',{head:true,count:'exact'})).error}
+    ];
+    async function run(){
+      grid.innerHTML=checks.map(c=>`<div class="bg-white border rounded-2xl p-5"><div class="text-xs text-gray-400 uppercase tracking-wider">${c.name}</div><div class="mt-3 text-sm text-gray-400">Checking…</div></div>`).join('');
+      const results=[];for(const c of checks){let ok=false;try{ok=await c.run()}catch(e){}results.push({...c,ok});}
+      grid.innerHTML=results.map(c=>`<div class="bg-white border ${c.ok?'border-emerald-100':'border-rose-100'} rounded-2xl p-5"><div class="flex justify-between"><span class="text-xs text-gray-400 uppercase tracking-wider">${c.name}</span><span class="w-2.5 h-2.5 rounded-full ${c.ok?'bg-emerald-500':'bg-rose-500'}"></span></div><div class="font-display text-xl font-bold mt-3">${c.ok?'Operational':'Needs attention'}</div><div class="text-xs text-gray-500 mt-1">${c.detail}</div></div>`).join('');
+      list.innerHTML=results.map(c=>`<div class="px-5 py-4 flex items-center justify-between"><div><div class="font-medium">${c.name}</div><div class="text-xs text-gray-500 mt-1">${c.detail}</div></div><span class="text-xs font-semibold ${c.ok?'text-emerald-600':'text-rose-600'}">${c.ok?'PASS':'CHECK'}</span></div>`).join('');
+    }
+    document.getElementById('run-checks').addEventListener('click',run);run();
+  })();
+  </script>
+</body></html>
