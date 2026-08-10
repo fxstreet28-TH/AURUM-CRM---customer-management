@@ -29,9 +29,7 @@ jobs:
             echo "::error::Missing 'database02' secret."
             exit 1
           fi
-          echo "machine ${MIRROR_HOST} login ${MIRROR_USER} password ${MIRROR_TOKEN}" > ~/.netrc
-          chmod 600 ~/.netrc
-          git remote add secondary "https://${MIRROR_HOST}/aurumworkspace/${MIRROR_REPO}.git"
+          git remote add secondary "https://${MIRROR_USER}:${MIRROR_TOKEN}@${MIRROR_HOST}/aurumworkspace/${MIRROR_REPO}.git"
           git push secondary --all --force
           git push secondary --tags --force
           echo "✅ Sync complete"
