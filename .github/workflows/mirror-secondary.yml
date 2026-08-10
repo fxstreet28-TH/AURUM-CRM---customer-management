@@ -23,7 +23,7 @@ jobs:
           MIRROR_TOKEN: ${{ secrets.database02 }}
           MIRROR_HOST: ${{ secrets.MIRROR_HOST }}
           MIRROR_USER: ${{ secrets.MIRROR_USER }}
-          MIRROR_REPO: aurum-crm---customer-management
+          MIRROR_REPO: aurum-crm-customer-management
         run: |
           if [ -z "$MIRROR_TOKEN" ]; then
             echo "::error::Missing 'database02' secret."
