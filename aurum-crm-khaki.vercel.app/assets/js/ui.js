@@ -9,6 +9,7 @@
     { href: "customers.html",   label: "Customers",   perm: "customers:view",   icon: iconCustomers },
     { href: "mt5-connections.html", label: "MT5 Connections", perm: "mt5:view",     icon: iconMt5 },
     { href: "subscriptions.html", label: "Subscriptions", perm: "subscriptions:view", icon: iconSubscriptions },
+    { href: "buybacks.html",    label: "Buybacks",    perm: "buybacks:view",    icon: iconBuyback },
     { href: "add-credit.html",    label: "Add Credit",    emailGate: true,          icon: iconAddCredit },
     { href: "remove-credit.html", label: "Remove Credit", emailGate: true,          icon: iconRemoveCredit },
     { href: "credit-log.html",    label: "Credit Log",    emailGate: true,          icon: iconCreditLog },
@@ -191,6 +192,7 @@
   function iconCreditLog() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5"><path d="M5 3h11l3 3v15a0 0 0 010 0H5a0 0 0 010 0V3z" stroke-linejoin="round"/><path d="M9 9h6M9 13h6M9 17h4" stroke-linecap="round"/></svg>`; }
   function iconMt5()       { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5"><path d="M3 17l5-5 3 3 4-6 6 8" stroke-linejoin="round" stroke-linecap="round"/><circle cx="8" cy="12" r="1.4" fill="currentColor"/><circle cx="11" cy="15" r="1.4" fill="currentColor"/><circle cx="15" cy="9" r="1.4" fill="currentColor"/></svg>`; }
   function iconSubscriptions() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18" stroke-linecap="round"/><path d="M16.5 14.5a2 2 0 11-1.4-3.4M16.5 11v3.5" stroke-linejoin="round" stroke-linecap="round"/></svg>`; }
+  function iconBuyback()   { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5"><path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4L4.2 8.7l5.4-.8z" stroke-linejoin="round"/><path d="M16.5 19.5h5M19 17v5" stroke-linecap="round"/></svg>`; }
   function iconHealth() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-5 h-5"><path d="M3 12h4l2.2-5 3.4 10 2.2-5H21" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 22C6.5 19.1 3 15.8 3 10.8A5 5 0 0112 7a5 5 0 019 3.8c0 5-3.5 8.3-9 11.2z" opacity=".35"/></svg>`; }
 
   window.AurumUI = { renderShell, setSubtitle, toast, modal, escapeHtml, fmtDate, fmtRelative, statusBadge, roleBadge };

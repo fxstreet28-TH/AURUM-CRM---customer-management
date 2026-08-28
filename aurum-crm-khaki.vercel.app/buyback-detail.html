@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Buyback Request · AURUM CRM</title>
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: {
+      colors: { 'aurum-bg':'#FAFAFA','aurum-gold':'#D4AF37','aurum-ink':'#111827' },
+      fontFamily: { display: ['"Plus Jakarta Sans"','Inter','sans-serif'], sans: ['Inter','sans-serif'] }
+    }}};
+  </script>
+  <link rel="stylesheet" href="assets/css/app.css" />
+</head>
+<body class="min-h-screen bg-aurum-bg text-aurum-ink">
+
+  <div class="flex min-h-screen">
+    <aside id="aurum-sidebar" class="aurum-sidebar w-64 shrink-0 bg-white border-r border-gray-100"></aside>
+
+    <main class="flex-1 min-w-0">
+      <div id="aurum-topbar"></div>
+      <div class="px-6 py-6 max-w-5xl mx-auto space-y-5">
+        <a href="buybacks.html" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-aurum-ink">‹ Back to buybacks</a>
+        <div id="detail-root">
+          <div class="bg-white rounded-xl border border-gray-100 px-5 py-10 text-center text-sm text-gray-400">Loading…</div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/supabase-client.js"></script>
+  <script src="assets/js/permissions.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script src="assets/js/buyback.js"></script>
+  <script>
+    (async function () {
+      const ctx = await AurumAuth.guard({ permission: "buybacks:view" });
+      AurumApp.boot(ctx);
+
+      const canProcess = AurumPerms.can(ctx.profile.role, "buybacks:process");
+      const root = document.getElementById("detail-root");
+      const esc  = AurumUI.escapeHtml;
+      const requestId = new URLSearchParams(location.search).get("id");
+
+      if (!requestId) {
+        AurumUI.setSubtitle("Buyback request");
+        root.innerHTML = errorCard("No request id in the URL.");
+        return;
+      }
+
+      let req = null;
+      await load();
+
+      // ---- data --------------------------------------------------------
+      async function load() {
+        const { data, error } = await sb.rpc("admin_get_buyback", { p_request_id: requestId });
+        if (error) {
+          AurumUI.setSubtitle("Buyback request");
+          root.innerHTML = errorCard(AurumBuyback.friendlyError(error, "โหลดข้อมูลไม่สำเร็จ"));
+          return;
+        }
+        req = data.request;
+        AurumUI.setSubtitle(`Request ${AurumBuyback.shortId(req.id)} · ${req.customer_email || "unknown customer"}`);
+        render();
+      }
+
+      function errorCard(msg) {
+        return `<div class="bg-white rounded-xl border border-gray-100 px-5 py-10 text-center text-sm text-rose-600">${esc(msg)}</div>`;
+      }
+
+      // ---- render ------------------------------------------------------
+      function render() {
+        const w = req.wallet || {};
+        const isTerminal = ["paid", "rejected", "cancelled"].includes(req.status);
+
+        root.innerHTML = `
+          <!-- Header -->
+          <div class="bg-white rounded-xl border border-gray-100 p-5 space-y-3">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="text-xs text-gray-500 uppercase tracking-wide">Request ID</div>
+                <div class="flex items-center gap-2 mt-1">
+                  <code class="font-mono text-sm text-aurum-ink break-all">${esc(req.id)}</code>
+                  <button data-act="copy" class="shrink-0 text-xs px-2 py-1 rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 focus-aurum">Copy</button>
+                </div>
+              </div>
+              <div class="text-right">${AurumBuyback.statusBadge(req.status)}</div>
+            </div>
+            <div class="grid sm:grid-cols-2 gap-3 pt-2 border-t border-gray-100 text-sm">
+              <div>
+                <div class="text-xs text-gray-500">Requested</div>
+                <div class="text-aurum-ink">${esc(AurumBuyback.fmtBangkok(req.requested_at))}</div>
+              </div>
+              <div>
+                <div class="text-xs text-gray-500">Processed</div>
+                <div class="text-aurum-ink">${req.processed_at ? esc(AurumBuyback.fmtBangkok(req.processed_at)) : "—"}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Customer -->
+          <div class="bg-white rounded-xl border border-gray-100 p-5 space-y-3 mt-5">
+            <h2 class="font-display text-sm font-semibold text-aurum-ink uppercase tracking-wide">Customer</h2>
+            <div class="text-sm">
+              <a href="customers.html?q=${encodeURIComponent(req.customer_email || "")}"
+                 class="text-aurum-ink font-medium underline decoration-gray-300 hover:decoration-aurum-gold">${esc(req.customer_email || "—")}</a>
+            </div>
+            ${req.wallet ? `
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-gray-100">
+              ${statCell("Balance now", w.total_balance, "text-aurum-gold")}
+              ${statCell("Purchased", w.total_purchased)}
+              ${statCell("Spent", w.total_spent)}
+              ${statCell("Bought back", w.total_bought_back)}
+            </div>
+            <p class="text-xs text-gray-400">Wallet figures are live, not the values at request time.</p>`
+            : `<p class="text-sm text-rose-600">ลูกค้าไม่มี wallet</p>`}
+          </div>
+
+          <!-- Request details -->
+          <div class="bg-white rounded-xl border border-gray-100 p-5 space-y-4 mt-5">
+            <h2 class="font-display text-sm font-semibold text-aurum-ink uppercase tracking-wide">Request details</h2>
+
+            <div class="rounded-lg bg-gray-50 border border-gray-100 px-4 py-3">
+              <div class="text-sm text-gray-600">
+                ${esc(String(req.star_amount))} stars × ฿${esc(Number(req.thb_per_star).toFixed(2))} =
+                <strong class="text-aurum-ink text-base">${esc(AurumBuyback.fmtThb(req.total_thb))}</strong>
+              </div>
+            </div>
+
+            <div class="grid sm:grid-cols-2 gap-3 text-sm">
+              ${field("Bank", req.bank_name)}
+              ${field("Account number", req.bank_account_number, "font-mono")}
+              ${field("Account holder", req.bank_account_name)}
+              ${field("Processed by", req.processed_by_email
+                  ? `${req.processed_by_name ? req.processed_by_name + " · " : ""}${req.processed_by_email}`
+                  : null)}
+            </div>
+
+            ${req.rejection_reason ? `
+              <div class="rounded-lg bg-rose-50 border border-rose-100 px-4 py-3">
+                <div class="text-xs font-medium text-rose-700 uppercase tracking-wide">Rejection reason</div>
+                <div class="text-sm text-rose-900 mt-1 whitespace-pre-wrap">${esc(req.rejection_reason)}</div>
+              </div>` : ""}
+
+            <div>
+              <label for="bb-notes" class="block text-xs font-medium text-gray-600 mb-1">Admin notes</label>
+              <textarea id="bb-notes" rows="4" ${canProcess ? "" : "disabled"}
+                class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus-aurum font-mono disabled:bg-gray-50 disabled:text-gray-500"
+                >${esc(req.admin_notes || "")}</textarea>
+              ${canProcess ? `
+              <div class="flex items-center gap-2 mt-2">
+                <button data-act="save-notes"
+                  class="px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 focus-aurum">Save notes</button>
+                <span class="text-xs text-gray-400">Saving notes does not change the status.</span>
+              </div>` : ""}
+            </div>
+          </div>
+
+          <!-- Actions -->
+          ${renderActions(isTerminal)}
+        `;
+
+        wire();
+      }
+
+      function statCell(label, value, cls) {
+        return `<div>
+          <div class="text-xs text-gray-500">${esc(label)}</div>
+          <div class="font-display text-lg font-semibold ${cls || "text-aurum-ink"} tabular-nums">${esc(String(value ?? "—"))}</div>
+        </div>`;
+      }
+
+      function field(label, value, cls) {
+        return `<div>
+          <div class="text-xs text-gray-500">${esc(label)}</div>
+          <div class="text-aurum-ink ${cls || ""} break-all">${esc(value || "—")}</div>
+        </div>`;
+      }
+
+      function renderActions(isTerminal) {
+        if (isTerminal) {
+          return `<div class="bg-white rounded-xl border border-gray-100 p-5 mt-5">
+            <p class="text-sm text-gray-500">
+              This request is <strong>${esc(req.status)}</strong> — a terminal state. No further action is possible.
+            </p>
+          </div>`;
+        }
+        if (!canProcess) {
+          return `<div class="bg-white rounded-xl border border-gray-100 p-5 mt-5">
+            <p class="text-sm text-gray-500">You do not have permission to process buyback requests.</p>
+          </div>`;
+        }
+
+        const buttons = [];
+        if (req.status === "pending") {
+          buttons.push(btn("approve", "Approve", "bg-sky-600 text-white hover:bg-sky-700"));
+        }
+        if (req.status === "approved") {
+          buttons.push(btn("paid", "Mark Paid", "bg-emerald-600 text-white hover:bg-emerald-700"));
+        }
+        if (req.status === "pending" || req.status === "approved") {
+          buttons.push(btn("reject", "Reject", "bg-rose-600 text-white hover:bg-rose-700"));
+        }
+
+        return `<div class="bg-white rounded-xl border border-gray-100 p-5 mt-5">
+          <h2 class="font-display text-sm font-semibold text-aurum-ink uppercase tracking-wide mb-3">Actions</h2>
+          <div class="flex flex-wrap gap-2">${buttons.join("")}</div>
+        </div>`;
+      }
+
+      function btn(act, label, cls) {
+        return `<button data-act="${act}" class="px-4 py-2 rounded-lg text-sm font-semibold ${cls} focus-aurum">${esc(label)}</button>`;
+      }
+
+      // ---- interactions --------------------------------------------------
+      function wire() {
+        const on = (act, fn) => {
+          const el = root.querySelector(`[data-act="${act}"]`);
+          if (el) el.addEventListener("click", fn);
+        };
+
+        on("copy", async (e) => {
+          try {
+            await navigator.clipboard.writeText(req.id);
+            AurumUI.toast("Copied request ID", "success");
+          } catch {
+            // Clipboard API needs a secure context; select the text instead.
+            const r = document.createRange();
+            r.selectNodeContents(e.target.previousElementSibling);
+            const sel = window.getSelection();
+            sel.removeAllRanges(); sel.addRange(r);
+            AurumUI.toast("Press Ctrl/Cmd+C to copy", "info");
+          }
+        });
+
+        on("save-notes", async (e) => {
+          const value = root.querySelector("#bb-notes").value;
+          e.target.disabled = true;
+          const { error } = await sb.rpc("admin_update_buyback_notes", {
+            p_request_id: req.id, p_admin_notes: value,
+          });
+          e.target.disabled = false;
+          if (error) return AurumUI.toast(AurumBuyback.friendlyError(error, "บันทึกโน้ตไม่สำเร็จ"), "error");
+          AurumUI.toast("บันทึกโน้ตแล้ว", "success");
+          await load();
+        });
+
+        on("approve", async () => {
+          const out = await actionDialog({
+            title: "Approve buyback",
+            message: "อนุมัติคำขอ buyback นี้? (ยังไม่ได้โอนเงิน — ทำเครื่องหมายว่าตรวจสอบข้อมูลลูกค้าเสร็จแล้ว)",
+            confirmLabel: "Approve",
+            confirmClass: "bg-sky-600 text-white hover:bg-sky-700",
+          });
+          if (!out) return;
+          await transition("approved", out.note, "อนุมัติคำขอแล้ว");
+        });
+
+        on("paid", async () => {
+          const out = await actionDialog({
+            title: "Mark as paid",
+            message: `ยืนยันว่าโอนเงิน ${AurumBuyback.fmtThb(req.total_thb)} เข้าบัญชี `
+                   + `${req.bank_name || "—"} ${req.bank_account_number || ""} (${req.bank_account_name || "—"}) `
+                   + `เรียบร้อยแล้ว? (ไม่สามารถย้อนกลับได้)`,
+            confirmLabel: "Mark Paid",
+            confirmClass: "bg-emerald-600 text-white hover:bg-emerald-700",
+          });
+          if (!out) return;
+          await transition("paid", out.note, "ทำเครื่องหมายว่าจ่ายเงินแล้ว");
+        });
+
+        on("reject", async () => {
+          const out = await actionDialog({
+            title: "Reject buyback",
+            message: "ปฏิเสธคำขอ buyback นี้?",
+            warning: `การ Reject จะคืน ${req.star_amount} Stars ให้ลูกค้าอัตโนมัติ`,
+            confirmLabel: "Reject & refund",
+            confirmClass: "bg-rose-600 text-white hover:bg-rose-700",
+            requireReason: true,
+          });
+          if (!out) return;
+
+          const { data, error } = await sb.rpc("admin_refund_buyback", {
+            p_request_id:       req.id,
+            p_new_status:       "rejected",
+            p_rejection_reason: out.reason,
+            p_admin_notes:      out.note || null,
+          });
+          if (error) return AurumUI.toast(AurumBuyback.friendlyError(error, "ปฏิเสธคำขอไม่สำเร็จ"), "error");
+
+          AurumAuth.log("buyback.rejected", {
+            resource_type: "buyback_request", resource_id: req.id,
+            metadata: { refunded_stars: data && data.refunded_stars, reason: out.reason },
+          });
+          AurumUI.toast(`ปฏิเสธคำขอแล้ว — คืน ${data.refunded_stars} Stars ให้ลูกค้าเรียบร้อย`, "success");
+          await load();
+        });
+      }
+
+      async function transition(newStatus, note, okMsg) {
+        const { error } = await sb.rpc("admin_transition_buyback_status", {
+          p_request_id:  req.id,
+          p_new_status:  newStatus,
+          p_admin_notes: note || null,
+        });
+        if (error) return AurumUI.toast(AurumBuyback.friendlyError(error, "เปลี่ยนสถานะไม่สำเร็จ"), "error");
+        AurumAuth.log(`buyback.${newStatus}`, {
+          resource_type: "buyback_request", resource_id: req.id, metadata: { note: note || null },
+        });
+        AurumUI.toast(okMsg, "success");
+        await load();
+      }
+
+      // Confirm dialog with an optional note and, for reject, a required reason.
+      function actionDialog({ title, message, warning, confirmLabel, confirmClass, requireReason }) {
+        return new Promise((resolve) => {
+          const { wrap, close } = AurumBuyback.buildOverlay(`
+            <div class="w-full max-w-lg my-8 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden"
+                 role="dialog" aria-modal="true" aria-labelledby="bb-dlg-title">
+              <div class="px-6 py-4 border-b border-gray-100">
+                <h3 id="bb-dlg-title" class="font-display text-lg font-semibold text-aurum-ink">${esc(title)}</h3>
+              </div>
+              <div class="px-6 py-5 space-y-4">
+                <p class="text-sm text-gray-700">${esc(message)}</p>
+                ${warning ? `<div class="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800">⚠ ${esc(warning)}</div>` : ""}
+                ${requireReason ? `
+                <div>
+                  <label for="bb-reason" class="block text-xs font-medium text-gray-600 mb-1">
+                    Rejection reason <span class="text-rose-600">*</span>
+                  </label>
+                  <textarea id="bb-reason" rows="3" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus-aurum"></textarea>
+                </div>` : ""}
+                <div>
+                  <label for="bb-dlg-note" class="block text-xs font-medium text-gray-600 mb-1">
+                    Admin note <span class="text-gray-400">(optional)</span>
+                  </label>
+                  <textarea id="bb-dlg-note" rows="2" class="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus-aurum"></textarea>
+                </div>
+                <p data-role="err" class="text-sm text-rose-600 hidden"></p>
+              </div>
+              <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-2">
+                <button data-role="cancel" class="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100">Cancel</button>
+                <button data-role="confirm" class="px-4 py-2 rounded-lg text-sm font-semibold ${confirmClass}">${esc(confirmLabel)}</button>
+              </div>
+            </div>`);
+
+          const errEl = wrap.querySelector('[data-role="err"]');
+
+          wrap.querySelector('[data-role="cancel"]').addEventListener("click", () => { close(); resolve(null); });
+          wrap.querySelector('[data-role="confirm"]').addEventListener("click", () => {
+            const note   = wrap.querySelector("#bb-dlg-note").value.trim();
+            const reason = requireReason ? wrap.querySelector("#bb-reason").value.trim() : null;
+            if (requireReason && !reason) {
+              errEl.textContent = "ต้องระบุเหตุผลในการปฏิเสธ";
+              errEl.classList.remove("hidden");
+              wrap.querySelector("#bb-reason").focus();
+              return;
+            }
+            close();
+            resolve({ note, reason });
+          });
+
+          const first = wrap.querySelector(requireReason ? "#bb-reason" : "#bb-dlg-note");
+          if (first) first.focus();
+        });
+      }
+    })();
+  </script>
+</body>
+</html>
