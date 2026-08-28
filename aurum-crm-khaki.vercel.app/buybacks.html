@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Buybacks · AURUM CRM</title>
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: {
+      colors: { 'aurum-bg':'#FAFAFA','aurum-gold':'#D4AF37','aurum-ink':'#111827' },
+      fontFamily: { display: ['"Plus Jakarta Sans"','Inter','sans-serif'], sans: ['Inter','sans-serif'] }
+    }}};
+  </script>
+  <link rel="stylesheet" href="assets/css/app.css" />
+</head>
+<body class="min-h-screen bg-aurum-bg text-aurum-ink">
+
+  <div class="flex min-h-screen">
+    <aside id="aurum-sidebar" class="aurum-sidebar w-64 shrink-0 bg-white border-r border-gray-100"></aside>
+
+    <main class="flex-1 min-w-0">
+      <div id="aurum-topbar"></div>
+
+      <div class="px-6 py-6 max-w-7xl mx-auto space-y-5">
+
+        <!-- Stat cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Pending</div>
+            <div class="font-display text-2xl font-semibold mt-1 text-amber-600" data-stat="pending">—</div>
+            <div class="text-xs text-amber-600 mt-1">Awaiting review</div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Approved</div>
+            <div class="font-display text-2xl font-semibold mt-1 text-sky-600" data-stat="approved">—</div>
+            <div class="text-xs text-sky-600 mt-1">Transfer not sent yet</div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Paid</div>
+            <div class="font-display text-2xl font-semibold mt-1 text-emerald-600" data-stat="paid">—</div>
+            <div class="text-xs text-emerald-600 mt-1">Completed</div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Refunded</div>
+            <div class="font-display text-2xl font-semibold mt-1 text-gray-600" data-stat="refunded">—</div>
+            <div class="text-xs text-gray-500 mt-1">Rejected or cancelled</div>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-100 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wide">Payout owed</div>
+            <div class="font-display text-2xl font-semibold mt-1 text-aurum-gold" data-stat="owed">—</div>
+            <div class="text-xs text-gray-400 mt-1">Pending + approved THB</div>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-xl border border-gray-100 p-4 flex flex-wrap items-center gap-3">
+          <div class="flex flex-wrap items-center gap-1" id="f-status" role="tablist" aria-label="Filter by status">
+            <button role="tab" data-status=""          class="status-tab" aria-selected="true">All</button>
+            <button role="tab" data-status="pending"   class="status-tab" aria-selected="false">Pending</button>
+            <button role="tab" data-status="approved"  class="status-tab" aria-selected="false">Approved</button>
+            <button role="tab" data-status="paid"      class="status-tab" aria-selected="false">Paid</button>
+            <button role="tab" data-status="rejected"  class="status-tab" aria-selected="false">Rejected</button>
+            <button role="tab" data-status="cancelled" class="status-tab" aria-selected="false">Cancelled</button>
+          </div>
+          <input id="f-search" type="search" autocomplete="off" placeholder="Search customer email…"
+            class="flex-1 min-w-[200px] rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus-aurum"/>
+          <button id="btn-create"
+            class="shrink-0 px-4 py-2 rounded-lg text-sm font-semibold bg-aurum-gold text-aurum-ink hover:brightness-95 focus-aurum">
+            + Create for Customer
+          </button>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-white rounded-xl border border-gray-100 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="aurum-table min-w-full text-sm">
+              <thead class="bg-gray-50 text-gray-500 uppercase text-xs tracking-wide">
+                <tr>
+                  <th class="text-left  font-medium px-5 py-3">Request</th>
+                  <th class="text-left  font-medium px-5 py-3">Requested</th>
+                  <th class="text-left  font-medium px-5 py-3">Customer</th>
+                  <th class="text-right font-medium px-5 py-3">Stars</th>
+                  <th class="text-right font-medium px-5 py-3">Payout THB</th>
+                  <th class="text-left  font-medium px-5 py-3">Bank</th>
+                  <th class="text-left  font-medium px-5 py-3">Status</th>
+                  <th class="text-right font-medium px-5 py-3">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="buybacks-body" class="divide-y divide-gray-100">
+                <tr><td colspan="8" class="px-5 py-8 text-center text-sm text-gray-400">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-3">
+            <span class="text-xs text-gray-500" id="buybacks-count"></span>
+            <div class="flex items-center gap-2" id="buybacks-pager"></div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <style>
+    .status-tab { padding:.5rem .75rem; border-radius:.5rem; font-size:.8125rem; font-weight:500; color:#6B7280; border:1px solid transparent; }
+    .status-tab:hover { background:#F3F4F6; color:#111827; }
+    .status-tab[aria-selected="true"] { background:rgba(214,181,74,.14); color:#7a5d08; border-color:rgba(214,181,74,.4); font-weight:600; }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/supabase-client.js"></script>
+  <script src="assets/js/permissions.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script src="assets/js/buyback.js"></script>
+  <script>
+    (async function () {
+      const ctx = await AurumAuth.guard({ permission: "buybacks:view" });
+      AurumApp.boot(ctx);
+      AurumUI.setSubtitle("Star buyback requests — created and processed by admins");
+
+      const canProcess = AurumPerms.can(ctx.profile.role, "buybacks:process");
+
+      const PAGE_SIZE = 50;
+      let rows = [];
+      let page = 1;
+      let status = "";
+      let search = "";
+      let loadSeq = 0;
+
+      const body   = document.getElementById("buybacks-body");
+      const countEl= document.getElementById("buybacks-count");
+      const createBtn = document.getElementById("btn-create");
+
+      if (!canProcess) createBtn.remove();
+
+      // ---- filters -----------------------------------------------------
+      document.getElementById("f-status").addEventListener("click", (e) => {
+        const tab = e.target.closest("[data-status]");
+        if (!tab) return;
+        document.querySelectorAll("#f-status [data-status]").forEach(b =>
+          b.setAttribute("aria-selected", String(b === tab)));
+        status = tab.dataset.status;
+        page = 1;
+        load();
+      });
+
+      let searchTimer = null;
+      document.getElementById("f-search").addEventListener("input", (e) => {
+        clearTimeout(searchTimer);
+        const q = e.target.value.trim();
+        searchTimer = setTimeout(() => { search = q; page = 1; load(); }, 300);
+      });
+
+      if (createBtn) {
+        createBtn.addEventListener("click", () => {
+          AurumBuyback.openCreateModal({
+            onCreated: (requestId) => {
+              window.location.href = `buyback-detail.html?id=${encodeURIComponent(requestId)}`;
+            },
+          });
+        });
+      }
+
+      // ---- data --------------------------------------------------------
+      async function load() {
+        const seq = ++loadSeq;
+        body.innerHTML = `<tr><td colspan="8" class="px-5 py-8 text-center text-sm text-gray-400">Loading…</td></tr>`;
+        const { data, error } = await sb.rpc("admin_list_buybacks", {
+          p_status: status || null,
+          p_search: search || null,
+        });
+        if (seq !== loadSeq) return;
+
+        if (error) {
+          body.innerHTML = `<tr><td colspan="8" class="px-5 py-8 text-center text-sm text-rose-600">
+            ${AurumUI.escapeHtml(AurumBuyback.friendlyError(error))}</td></tr>`;
+          countEl.textContent = "";
+          return;
+        }
+        rows = (data && data.rows) || [];
+        render();
+      }
+
+      // Stats always reflect the whole table, not the active filter.
+      async function loadStats() {
+        const { data, error } = await sb.rpc("admin_list_buybacks", { p_status: null, p_search: null });
+        if (error) return;
+        const all = (data && data.rows) || [];
+        const n = (s) => all.filter(r => r.status === s).length;
+        const set = (k, v) => { const el = document.querySelector(`[data-stat="${k}"]`); if (el) el.textContent = v; };
+        set("pending",  n("pending"));
+        set("approved", n("approved"));
+        set("paid",     n("paid"));
+        set("refunded", n("rejected") + n("cancelled"));
+        const owed = all
+          .filter(r => r.status === "pending" || r.status === "approved")
+          .reduce((sum, r) => sum + Number(r.total_thb || 0), 0);
+        set("owed", AurumBuyback.fmtThb(owed));
+      }
+
+      // ---- render ------------------------------------------------------
+      function render() {
+        const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+        if (page > totalPages) page = totalPages;
+        const slice = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+        if (!slice.length) {
+          body.innerHTML = `<tr><td colspan="8" class="px-5 py-10 text-center text-sm text-gray-400">
+            ${search || status ? "No buyback requests match this filter." : "No buyback requests yet."}</td></tr>`;
+          countEl.textContent = "0 requests";
+          renderPager(1);
+          return;
+        }
+
+        body.innerHTML = slice.map(r => {
+          const href = `buyback-detail.html?id=${encodeURIComponent(r.id)}`;
+          return `<tr class="hover:bg-gray-50/70">
+            <td class="px-5 py-3">
+              <span class="font-mono text-xs text-gray-600">${AurumUI.escapeHtml(AurumBuyback.shortId(r.id))}</span>
+            </td>
+            <td class="px-5 py-3 text-gray-600" title="${AurumUI.escapeHtml(AurumBuyback.fmtBangkok(r.requested_at))}">
+              ${AurumUI.escapeHtml(AurumUI.fmtRelative(r.requested_at))}
+            </td>
+            <td class="px-5 py-3 text-aurum-ink">${AurumUI.escapeHtml(r.customer_email || "—")}</td>
+            <td class="px-5 py-3 text-right tabular-nums font-medium">${AurumUI.escapeHtml(String(r.star_amount))}</td>
+            <td class="px-5 py-3 text-right tabular-nums font-medium">${AurumUI.escapeHtml(AurumBuyback.fmtThb(r.total_thb))}</td>
+            <td class="px-5 py-3 text-gray-600">${AurumUI.escapeHtml(AurumBuyback.fmtBank(r.bank_name, r.bank_account_number))}</td>
+            <td class="px-5 py-3">${AurumBuyback.statusBadge(r.status)}</td>
+            <td class="px-5 py-3 text-right">
+              <a href="${href}"
+                 class="inline-flex items-center px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 focus-aurum"
+                 aria-label="Open request ${AurumUI.escapeHtml(AurumBuyback.shortId(r.id))}">View</a>
+            </td>
+          </tr>`;
+        }).join("");
+
+        countEl.textContent = `${rows.length} request${rows.length === 1 ? "" : "s"}`;
+        renderPager(totalPages);
+      }
+
+      function renderPager(totalPages) {
+        const host = document.getElementById("buybacks-pager");
+        if (totalPages <= 1) { host.innerHTML = ""; return; }
+        host.innerHTML = `
+          <button data-pg="prev" ${page <= 1 ? "disabled" : ""}
+            class="px-2 py-1 rounded-md border border-gray-200 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-40">‹ Prev</button>
+          <span class="text-xs text-gray-500">Page ${page} / ${totalPages}</span>
+          <button data-pg="next" ${page >= totalPages ? "disabled" : ""}
+            class="px-2 py-1 rounded-md border border-gray-200 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-40">Next ›</button>`;
+        host.querySelectorAll("[data-pg]").forEach(b => b.addEventListener("click", e => {
+          if (e.currentTarget.dataset.pg === "prev" && page > 1) { page--; render(); }
+          if (e.currentTarget.dataset.pg === "next" && page < totalPages) { page++; render(); }
+        }));
+      }
+
+      await load();
+      await loadStats();
+    })();
+  </script>
+</body>
+</html>
