@@ -164,6 +164,14 @@
       // are read fresh at render time, so they persist across each refetch.
       setInterval(() => { load(); loadBalances(); loadSubscriptions(); }, 30_000);
 
+      // Allow deep links such as customers.html?q=<email> (used by the
+      // buyback detail page) to land with the search box pre-filled.
+      const qParam = new URLSearchParams(location.search).get("q");
+      if (qParam) {
+        document.getElementById("f-search").value = qParam;
+        render();   // load() already rendered unfiltered; re-render with the filter
+      }
+
       document.getElementById("f-search").addEventListener("input", () => { page = 1; render(); });
       document.getElementById("f-status").addEventListener("change", () => { page = 1; render(); });
       document.getElementById("f-verified").addEventListener("change", () => { page = 1; render(); });
